@@ -10,7 +10,6 @@ const Profile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [favorites, setFavorites] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [editingReview, setEditingReview] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -64,24 +63,6 @@ const Profile = () => {
 
       console.log('Profile data:', profileData);
       setProfile(profileData);
-
-      // 찜한 도구 가져오기
-      const { data: favoritesData } = await supabase
-        .from('favorites')
-        .select(`
-          *,
-          tool:tool_id (
-            id,
-            title,
-            description,
-            image_url,
-            price_type
-          )
-        `)
-        .eq('user_id', user.id);
-      
-      console.log('Favorites data:', favoritesData);
-      setFavorites(favoritesData || []);
 
       // 작성한 리뷰 가져오기
       const { data: reviewsData, error: reviewsError } = await supabase
@@ -292,50 +273,6 @@ const Profile = () => {
           </div>
         </div>
       )}
-
-      {/* 찜한 도구 */}
-      <div className="bg-[#1e2128] rounded-xl p-6 mb-6 border border-[#2b2f38]">
-        <h2 className="text-xl font-bold text-white mb-4">찜한 도구</h2>
-        {favorites?.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {favorites.map((favorite) => (
-              <div
-                key={favorite.id}
-                className="p-4 rounded-lg border border-[#2b2f38] hover:border-gray-600 transition-colors"
-              >
-                <div className="flex items-start gap-4">
-                  {favorite.tool?.image_url ? (
-                    <img
-                      src={favorite.tool.image_url}
-                      alt={favorite.tool?.title}
-                      className="w-12 h-12 rounded bg-white object-contain p-1 flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded bg-[#2b2f38] flex items-center justify-center flex-shrink-0">
-                      <span className="text-lg font-bold text-gray-400">
-                        {favorite.tool?.title?.charAt(0)}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <Link
-                      to={`/tool/${favorite.tool_id}`}
-                      className="block text-white font-medium hover:text-blue-400 truncate"
-                    >
-                      {favorite.tool?.title}
-                    </Link>
-                    <p className="text-sm text-gray-400 mt-2 line-clamp-2">
-                      {favorite.tool?.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-400">아직 찜한 도구가 없습니다.</p>
-        )}
-      </div>
 
       {/* 작성한 리뷰 */}
       <div className="bg-[#1e2128] rounded-xl p-6 border border-[#2b2f38]">

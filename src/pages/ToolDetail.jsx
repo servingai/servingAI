@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../config/supabase';
 import { ReviewSection } from '../components/reviews/ReviewSection';
+import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
+import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
+import { useFavorite } from '../hooks/useFavorite';
 
 const ToolDetail = () => {
   const { id } = useParams();
   const [tool, setTool] = useState(null);
   const [imageError, setImageError] = useState(false);
+  const { isFavorited, isLoading, toggleFavorite } = useFavorite(id);
 
   useEffect(() => {
     fetchToolDetails();
@@ -18,8 +22,8 @@ const ToolDetail = () => {
         .from('tools')
         .select(`
           *,
-          tool_categories (
-            categories (
+          tool_categories!inner (
+            categories!inner (
               name
             )
           )
@@ -99,52 +103,52 @@ const ToolDetail = () => {
           )}
         </div>
         <div className="p-6">
-          <div className="flex flex-wrap gap-2">
-            {tool.tool_categories?.map((tc) => (
-              <span 
-                key={tc.categories?.name || tc.id}
-                className="text-sm bg-[#2b2f38] text-gray-300 px-3 py-1.5 rounded-full"
-              >
-                {tc.categories?.name}
-              </span>
-            ))}
-            <span className={`text-sm px-3 py-1.5 rounded-full ${getPriceTypeColor(tool.price_type)}`}>
-              {getPriceTypeLabel(tool.price_type)}
-            </span>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap gap-2 mb-3">
+                {tool.tool_categories?.map((tc) => (
+                  <span
+                    key={tc.categories.name}
+                    className="text-xs bg-[#2b2f38] text-gray-300 px-2 py-1 rounded-full"
+                  >
+                    {tc.categories.name}
+                  </span>
+                ))}
+                <span className={`text-xs px-2 py-1 rounded-full ${getPriceTypeColor(tool.price_type)}`}>
+                  {getPriceTypeLabel(tool.price_type)}
+                </span>
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">{tool.title}</h1>
+              <p className="text-gray-400 whitespace-pre-wrap">{tool.description}</p>
+            </div>
+            <button
+              onClick={toggleFavorite}
+              disabled={isLoading}
+              className="flex-shrink-0 p-3 rounded-xl bg-[#2b2f38] hover:bg-[#3d4251] transition-colors"
+            >
+              {isFavorited ? (
+                <HeartSolid className="w-6 h-6 text-red-500" />
+              ) : (
+                <HeartOutline className="w-6 h-6 text-white" />
+              )}
+            </button>
           </div>
-          <h1 className="text-2xl font-bold mt-4">{tool.title}</h1>
-          <p className="text-gray-400 mt-3 leading-relaxed">{tool.description}</p>
-          {tool.website_url && tool.website_url !== '' && (
+          
+          {tool.url && (
             <a
-              href={tool.website_url}
+              href={tool.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="mt-6 block w-full bg-blue-600 hover:bg-blue-700 text-center py-3 rounded-xl transition-colors"
             >
-              <i className="fas fa-external-link-alt mr-2"></i>
-              웹사이트 방문하기
+              서비스 바로가기
             </a>
           )}
         </div>
       </div>
 
-      {/* Tool Features */}
-      <div className="bg-[#1e2128] rounded-xl p-6 mb-6 border border-[#2b2f38]">
-        <h2 className="text-lg font-bold mb-4">주요 기능</h2>
-        <ul className="space-y-3">
-          {tool.features?.map((feature, index) => (
-            <li key={index} className="flex items-start gap-3">
-              <i className="fas fa-check-circle text-green-500 mt-1"></i>
-              <span className="text-gray-300">{feature}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Reviews Section */}
-      <div className="bg-[#1e2128] rounded-xl p-6 border border-[#2b2f38]">
-        <ReviewSection toolId={id} />
-      </div>
+      {/* Reviews */}
+      <ReviewSection toolId={id} />
     </main>
   );
 };

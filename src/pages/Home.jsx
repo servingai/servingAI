@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import ToolCard from '../components/ToolCard';
 import { supabase } from '../config/supabase';
+import { PlusIcon, XMarkIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 
 const Home = () => {
   const [searchParams] = useSearchParams();
@@ -10,6 +11,20 @@ const Home = () => {
   const [category, setCategory] = useState('전체 카테고리');
   const [priceType, setPriceType] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [showFabMenu, setShowFabMenu] = useState(false);
+
+  const handleFabClick = () => {
+    setShowFabMenu(!showFabMenu);
+  };
+
+  const handleMenuItemClick = (action) => {
+    setShowFabMenu(false);
+    if (action === 'request') {
+      window.open('https://k0h.notion.site/196f55643f2080b1b7fcc69890be712a?pvs=105', '_blank');
+    } else if (action === 'contact') {
+      window.open('https://open.kakao.com/o/sGrocqfh', '_blank');
+    }
+  };
 
   useEffect(() => {
     fetchCategories();
@@ -21,17 +36,21 @@ const Home = () => {
       setLoading(true);
       const searchQuery = searchParams.get('search');
       
+      // 먼저 tool_categories 테이블 구조 확인
+      const { data: categoryData, error: categoryError } = await supabase
+        .from('tool_categories')
+        .select('*')
+        .limit(1);
+      
+      console.log('Category data structure:', categoryData);
+
+      if (categoryError) {
+        console.error('Error fetching categories:', categoryError);
+      }
+      
       let query = supabase
         .from('tools')
-        .select(`
-          *,
-          tool_categories (
-            categories (
-              id,
-              name
-            )
-          )
-        `)
+        .select('*, tool_categories(*, categories(*))')
         .order('title');
 
       // 검색어가 있는 경우
@@ -67,16 +86,20 @@ const Home = () => {
         throw error;
       }
 
+      console.log('Raw tools data:', tools);
+
       // 중복 제거 및 카테고리 필터링
-      let filteredTools = tools ? [...new Set(tools.map(t => t.id))].map(id => tools.find(t => t.id === id)) : [];
+      let filteredTools = tools || [];
       
       if (category !== '전체 카테고리') {
         filteredTools = filteredTools.filter(tool => 
-          tool.tool_categories?.some(tc => tc.categories?.name === category)
+          tool.tool_categories?.some(tc => 
+            tc.categories?.name === category
+          )
         );
       }
 
-      console.log('Fetched tools:', filteredTools); // 디버깅용 로그
+      console.log('Filtered tools:', filteredTools);
       setTools(filteredTools);
     } catch (error) {
       console.error('Error:', error);
@@ -102,7 +125,7 @@ const Home = () => {
   };
 
   return (
-    <main className="pt-[60px] pb-[80px]">
+    <main className="pt-[60px] pb-[80px] px-4">
       <div className="p-4 flex items-center justify-start gap-4 bg-[#1a1d24]">
         <div className="relative min-w-[160px]">
           <select 
@@ -147,21 +170,61 @@ const Home = () => {
           <div className="col-span-full text-center py-8">로딩중...</div>
         ) : tools.length > 0 ? (
           tools.map((tool) => (
-            <Link key={tool.id} to={`/tool/${tool.id}`}>
-              <ToolCard 
-                title={tool.title}
-                description={tool.description}
-                price_type={tool.price_type}
-                image_url={tool.image_url}
-                tool_categories={tool.tool_categories || []}
-              />
-            </Link>
+            <ToolCard
+              key={tool.id}
+              id={tool.id}
+              title={tool.title}
+              description={tool.description}
+              price_type={tool.price_type}
+              image_url={tool.image_url}
+              tool_categories={tool.tool_categories || []}
+            />
           ))
         ) : (
           <div className="col-span-full text-center py-8">
             해당하는 AI 도구가 없습니다.
           </div>
         )}
+      </div>
+
+      {/* FAB 버튼과 메뉴 */}
+      <div className="fixed right-4 bottom-20 z-40 flex flex-col items-end gap-3">
+        {showFabMenu && (
+          <>
+            <button
+              onClick={() => handleMenuItemClick('contact')}
+              className="flex items-center gap-2"
+            >
+              <span className="px-3 py-1.5 bg-[#1e2128] border border-[#2b2f38] rounded-lg text-sm shadow-lg">
+                문의하기
+              </span>
+              <div className="w-12 h-12 bg-[#3B82F6] rounded-full shadow-lg flex items-center justify-center">
+                <ChatBubbleLeftIcon className="w-6 h-6 text-white" />
+              </div>
+            </button>
+            <button
+              onClick={() => handleMenuItemClick('request')}
+              className="flex items-center gap-2"
+            >
+              <span className="px-3 py-1.5 bg-[#1e2128] border border-[#2b2f38] rounded-lg text-sm shadow-lg">
+                도구 추가요청
+              </span>
+              <div className="w-12 h-12 bg-[#3B82F6] rounded-full shadow-lg flex items-center justify-center">
+                <PlusIcon className="w-6 h-6 text-white" />
+              </div>
+            </button>
+          </>
+        )}
+        <button
+          onClick={handleFabClick}
+          className="w-12 h-12 bg-[#3B82F6] hover:bg-[#2563eb] rounded-full shadow-lg flex items-center justify-center transition-colors"
+        >
+          {showFabMenu ? (
+            <XMarkIcon className="w-6 h-6 text-white" />
+          ) : (
+            <PlusIcon className="w-6 h-6 text-white" />
+          )}
+        </button>
       </div>
     </main>
   );

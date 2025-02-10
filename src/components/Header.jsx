@@ -86,13 +86,6 @@ const Header = ({ onSearch }) => {
             
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-[#1e2128] border border-[#2b2f38] rounded-xl shadow-lg overflow-hidden">
-                <Link 
-                  to="/profile"
-                  className="block px-4 py-2 text-sm hover:bg-[#2b2f38] transition-colors"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  프로필
-                </Link>
                 <button
                   onClick={() => {
                     handleLogout();
