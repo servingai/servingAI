@@ -99,12 +99,16 @@ const Header = ({ onSearch }) => {
             )}
           </div>
         ) : (
-          <button 
+          <button
             onClick={handleGoogleLogin}
-            className="flex items-center gap-2 rounded-xl bg-white text-gray-800 hover:bg-gray-100 px-4 py-2 text-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-[#2b2f38] rounded-lg hover:bg-[#3d4251] transition-colors"
           >
-            <img src="/google-icon.svg" alt="Google" className="w-4 h-4" />
-            Google로 계속하기
+            <img
+              src="/google.svg"
+              alt="Google"
+              className="w-4 h-4"
+            />
+            Google
           </button>
         )}
       </nav>
