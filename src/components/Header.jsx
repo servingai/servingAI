@@ -59,7 +59,7 @@ const Header = ({ onSearch }) => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="AI 도구 검색"
+            placeholder=""
             className="w-full px-4 py-2 bg-[#1e2128] border border-[#2b2f38] rounded-xl text-sm focus:outline-none focus:border-[#3d4251] hover:border-[#3d4251] transition-colors"
           />
           <button
