@@ -4,6 +4,7 @@ import { supabase } from '../config/supabase';
 import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 import { ko } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import { jobCategories } from '../constants/jobCategories';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -264,7 +265,7 @@ const Profile = () => {
               <div>
                 <h3 className="text-sm font-medium text-gray-400">직군</h3>
                 <p className="mt-1 text-base font-medium text-white">
-                  {profile.job_category || '미설정'}
+                  {jobCategories.find(cat => cat.value === profile.job_category)?.label || '미설정'}
                 </p>
               </div>
               <div>
@@ -462,12 +463,11 @@ const Profile = () => {
                     className="w-full px-4 py-2 bg-[#2b2f38] border border-[#3d4251] rounded-lg text-white text-sm focus:outline-none focus:border-[#4d5261]"
                   >
                     <option value="">선택하세요</option>
-                    <option value="디자인">디자인</option>
-                    <option value="개발">개발</option>
-                    <option value="기획">기획</option>
-                    <option value="마케팅">마케팅</option>
-                    <option value="영업">영업</option>
-                    <option value="기타">기타</option>
+                    {jobCategories.map((category) => (
+                      <option key={category.value} value={category.value}>
+                        {category.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>

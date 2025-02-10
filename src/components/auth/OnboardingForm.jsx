@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { jobCategories } from '../../constants/jobCategories';
 
 export const OnboardingForm = () => {
   const { user } = useAuth();
@@ -128,11 +129,11 @@ export const OnboardingForm = () => {
               required
             >
               <option value="">선택해주세요</option>
-              <option value="개발">개발</option>
-              <option value="디자인">디자인</option>
-              <option value="마케팅">마케팅</option>
-              <option value="기획">기획</option>
-              <option value="기타">기타</option>
+              {jobCategories.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
             </select>
           </div>
 
