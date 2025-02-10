@@ -266,3 +266,23 @@ INSERT INTO tools (title, description, category, price_type, features, image_url
 ('Tiro AI', '한국어에 특화된 AI 기반 글쓰기 및 교정 도구입니다. 맞춤법 검사부터 문체 개선, 문장 구조 최적화까지 제공하며, 특히 학술 논문, 공문서, 비즈니스 문서 작성에 강점이 있습니다.', '문서 작성', 'free_trial',
   ARRAY['한국어 맞춤법 검사', '문체 개선', '문장 구조 최적화', '실시간 교정', '학술 논문 특화'],
   'https://tiro.com/static/images/tiro-logo.png');
+
+INSERT INTO tools (title, description, category, price_type, features, image_url) VALUES
+('Cutback', '전문적인 비디오 편집을 위한 AI 기반 자동화 도구입니다. 스포츠, 결혼식, 여행 등 다양한 장르의 영상을 자동으로 편집하며, 하이라이트 생성과 음악 싱크 기능을 제공합니다. 특히 액션캠 영상 편집에 특화되어 있습니다.', '비디오 제작', 'paid',
+  ARRAY['자동 하이라이트 생성', '음악 싱크', '스포츠 영상 특화', '템플릿 제공', '클라우드 저장'],
+  'https://cutback.video/wp-content/uploads/2023/12/cutback-logo-1.svg');
+
+INSERT INTO tools (title, description, category, price_type, features, image_url) VALUES
+('Filmora AI', 'Wondershare의 AI 기반 비디오 편집 소프트웨어입니다. 직관적인 인터페이스와 함께 AI 기능을 활용하여 전문적인 영상 편집이 가능합니다. 자동 자막 생성, 배경 제거, 스마트 컷팅 등 다양한 AI 기능을 제공합니다.', '비디오 제작', 'paid',
+  ARRAY['AI 자막 생성', '배경 제거', '스마트 컷팅', '특수 효과', '오디오 향상'],
+  'https://images.wondershare.com/filmora/brand/filmora-logo-color.svg');
+
+INSERT INTO tools (title, description, category, price_type, features, image_url) VALUES
+('Sora', 'OpenAI가 개발한 혁신적인 텍스트-투-비디오 생성 AI입니다. 자연스러운 움직임과 복잡한 장면을 생성할 수 있으며, 텍스트 설명만으로 고품질의 비디오를 제작할 수 있습니다. 현실적인 물리 효과와 다양한 카메라 움직임을 지원합니다.', '비디오 생성', 'paid',
+  ARRAY['텍스트 기반 비디오 생성', '자연스러운 움직임', '복잡한 장면 생성', '물리 효과', '다양한 카메라 앵글'],
+  'https://openai.com/favicon.ico');
+
+INSERT INTO tools (title, description, category, price_type, features, image_url) VALUES
+('Suno', 'AI를 활용한 음악 창작 플랫폼입니다. 텍스트 설명만으로 완성도 높은 음악을 생성할 수 있으며, 다양한 장르와 스타일의 음악 제작이 가능합니다. 보컬, 악기, 편곡을 모두 AI로 생성하여 전문적인 음악 제작을 지원합니다.', '오디오 생성', 'free_trial',
+  ARRAY['AI 작곡', '보컬 생성', '다중 악기 지원', '장르 커스터마이징', '고품질 오디오 출력'],
+  'https://assets-global.website-files.com/6502af467b2a8c4ee8159a5b/6502b22993b683b1a9f51db9_favicon.png');
