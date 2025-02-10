@@ -19,6 +19,7 @@ const ToolDetail = () => {
 
   const fetchTool = async () => {
     try {
+      console.log('Fetching tool with id:', id);
       const { data, error } = await supabase
         .from('tools')
         .select(`
@@ -33,6 +34,8 @@ const ToolDetail = () => {
         .single();
 
       if (error) throw error;
+
+      console.log('Fetched tool data:', data);
 
       // 카테고리 정보 정리
       const categories = data.tool_categories
@@ -113,13 +116,29 @@ const ToolDetail = () => {
               )}
             </button>
           </div>
+
+          {/* 주요 기능 요약 */}
+          {tool.features && tool.features.length > 0 && (
+            <div className="mt-6 p-4 bg-[#2b2f38] rounded-xl">
+              <h2 className="text-lg font-bold text-white mb-3">주요 기능</h2>
+              <ul className="space-y-2">
+                {tool.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-2 text-gray-300">
+                    <span className="text-blue-500 mt-1">•</span>
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           
-          {tool.url && (
+          {/* URL 링크 */}
+          {tool.website_url && (
             <a
-              href={tool.url}
+              href={tool.website_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-6 block w-full bg-blue-600 hover:bg-blue-700 text-center py-3 rounded-xl transition-colors"
+              className="mt-6 block w-full bg-[#3B82F6] hover:bg-[#2563EB] text-center py-3 rounded-xl transition-colors font-medium"
             >
               서비스 바로가기
             </a>
