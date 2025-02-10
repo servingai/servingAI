@@ -4,47 +4,31 @@ import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { useFavorite } from '../hooks/useFavorite';
 
-const ToolCard = ({ id, title, description, price_type, image_url, tool_categories }) => {
+const ToolCard = ({ id, title, description, price_type, image_url, categories }) => {
   const navigate = useNavigate();
   const [imageError, setImageError] = useState(false);
   const { isFavorited, isLoading, toggleFavorite } = useFavorite(id);
 
-  const getPriceTypeLabel = (type) => {
-    switch (type) {
-      case 'free':
-        return '무료';
-      case 'paid':
-        return '유료';
-      case 'free_trial':
-        return '무료체험';
-      default:
-        return type;
+  const priceTypeConfig = {
+    'free': {
+      label: '무료',
+      className: 'bg-green-500/20 text-green-500'
+    },
+    'paid': {
+      label: '유료',
+      className: 'bg-red-500/20 text-red-500'
+    },
+    'free_trial': {
+      label: '무료체험',
+      className: 'bg-yellow-500/20 text-yellow-500'
     }
-  };
-
-  const getPriceTypeColor = (type) => {
-    switch (type) {
-      case 'free':
-        return 'bg-green-500/20 text-green-500';
-      case 'paid':
-        return 'bg-red-500/20 text-red-500';
-      case 'free_trial':
-        return 'bg-yellow-500/20 text-yellow-500';
-      default:
-        return 'bg-gray-500/20 text-gray-500';
-    }
+  }[price_type] || {
+    label: price_type,
+    className: 'bg-gray-500/20 text-gray-500'
   };
 
   const handleImageError = () => {
     setImageError(true);
-  };
-
-  const renderPlaceholder = () => {
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="text-2xl font-bold text-gray-600">{title.charAt(0)}</div>
-      </div>
-    );
   };
 
   const handleFavoriteClick = async (e) => {
@@ -84,26 +68,26 @@ const ToolCard = ({ id, title, description, price_type, image_url, tool_categori
             />
           </div>
         ) : (
-          renderPlaceholder()
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-[#3d4251] rounded-lg" />
+          </div>
         )}
       </div>
       <div className="flex-1 p-4 flex flex-col min-h-0">
         <div className="flex-1">
           <div className="flex flex-wrap gap-2">
-            {console.log('Tool categories raw:', tool_categories)}
-            {Array.isArray(tool_categories) && tool_categories.map((tc, index) => {
-              console.log('Single category:', tc);
-              return (
+            {categories && categories.length > 0 && (
+              categories.map((category, index) => (
                 <span
-                  key={`${tc.categories?.name || index}`}
+                  key={index}
                   className="text-xs bg-[#2b2f38] text-gray-300 px-2 py-1 rounded-full"
                 >
-                  {tc.categories?.name || '카테고리 없음'}
+                  {category}
                 </span>
-              );
-            })}
-            <span className={`text-xs px-2 py-1 rounded-full ${getPriceTypeColor(price_type)}`}>
-              {getPriceTypeLabel(price_type)}
+              ))
+            )}
+            <span className={`text-xs px-2 py-1 rounded-full ${priceTypeConfig.className}`}>
+              {priceTypeConfig.label}
             </span>
           </div>
           <h3 className="mt-2.5 font-medium text-[15px] line-clamp-1">{title}</h3>

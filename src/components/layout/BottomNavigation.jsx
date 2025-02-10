@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { HomeIcon, HeartIcon, UserIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeSolid, HeartIcon as HeartSolid, UserIcon as UserSolid, SparklesIcon as SparklesSolid } from '@heroicons/react/24/solid';
 
 const BottomNavigation = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const [showComingSoon, setShowComingSoon] = useState(false);
+
+  const handleHomeClick = () => {
+    // 현재 홈 페이지에 있을 경우에만 필터 초기화
+    if (location.pathname === '/') {
+      setSearchParams('');
+    }
+    navigate('/');
+  };
 
   const handleAIRecommendClick = (e) => {
     e.preventDefault();
@@ -18,8 +28,8 @@ const BottomNavigation = () => {
       <nav className="fixed bottom-0 left-0 right-0 bg-[#1e2128] border-t border-[#2b2f38] px-6 py-2 z-50">
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-around items-center">
-            <Link
-              to="/"
+            <button
+              onClick={handleHomeClick}
               className={`flex flex-col items-center text-sm ${
                 location.pathname === '/' ? 'text-white' : 'text-gray-400'
               }`}
@@ -30,7 +40,7 @@ const BottomNavigation = () => {
                 <HomeIcon className="w-6 h-6" />
               )}
               <span className="mt-1">홈</span>
-            </Link>
+            </button>
 
             <Link
               to="#"

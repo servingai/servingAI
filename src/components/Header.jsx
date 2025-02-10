@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
 
@@ -7,7 +7,22 @@ const Header = ({ onSearch }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -49,10 +64,21 @@ const Header = ({ onSearch }) => {
     }
   };
 
+  const handleLogoClick = () => {
+    // 홈으로 이동하면서 검색 파라미터 초기화
+    setSearchParams('');
+    navigate('/');
+  };
+
   return (
     <header className="fixed top-0 w-full z-50 bg-gray-900/95 backdrop-blur">
       <nav className="px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="text-xl font-['Roboto'] font-bold tracking-wide">ServingAI</Link>
+        <button
+          onClick={handleLogoClick}
+          className="text-xl font-['Roboto'] font-bold tracking-wide hover:text-gray-300 transition-colors"
+        >
+          ServingAI
+        </button>
         <div className="relative flex-1 mx-4">
           <input
             type="text"
@@ -71,7 +97,7 @@ const Header = ({ onSearch }) => {
         </div>
         
         {user ? (
-          <div className="relative">
+          <div className="relative" ref={dropdownRef}>
             <button 
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-2 rounded-xl bg-[#2b2f38] hover:bg-[#3d4251] px-4 py-2 text-sm transition-colors"
