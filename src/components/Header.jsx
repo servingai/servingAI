@@ -104,11 +104,11 @@ const Header = ({ onSearch }) => {
             className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-[#2b2f38] rounded-lg hover:bg-[#3d4251] transition-colors"
           >
             <img
-              src="/google.svg"
+              src="/google-icon.svg"
               alt="Google"
               className="w-4 h-4"
             />
-            Google
+            회원가입
           </button>
         )}
       </nav>

@@ -102,8 +102,16 @@ const Favorites = () => {
 
   if (!user) {
     return (
-      <div className="pt-[60px] pb-[80px] px-4 text-center">
-        <p>로그인이 필요합니다.</p>
+      <div className="pt-[60px] pb-[80px] px-4">
+        <div className="h-[calc(100vh-140px)] flex flex-col items-center justify-center">
+          <p className="text-lg text-white mb-4">회원가입 후 더 많은 기능을 이용해보세요!</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-2.5 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563eb] transition-colors"
+          >
+            회원가입하기
+          </button>
+        </div>
       </div>
     );
   }
