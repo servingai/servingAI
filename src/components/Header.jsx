@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../config/supabase';
 
-const Header = ({ onLoginClick, onSearch }) => {
+const Header = ({ onSearch }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -18,6 +22,30 @@ const Header = ({ onLoginClick, onSearch }) => {
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSearch(e);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/onboarding`
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error logging in:', error.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error.message);
     }
   };
 
@@ -41,12 +69,51 @@ const Header = ({ onLoginClick, onSearch }) => {
             <i className="fas fa-search"></i>
           </button>
         </div>
-        <button 
-          onClick={onLoginClick}
-          className="rounded-xl bg-[#2b2f38] hover:bg-[#3d4251] px-4 py-2 text-sm transition-colors"
-        >
-          로그인
-        </button>
+        
+        {user ? (
+          <div className="relative">
+            <button 
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 rounded-xl bg-[#2b2f38] hover:bg-[#3d4251] px-4 py-2 text-sm transition-colors"
+            >
+              <img 
+                src={user.user_metadata.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}`}
+                alt="User"
+                className="w-6 h-6 rounded-full"
+              />
+              <span>{user.user_metadata.full_name || user.email}</span>
+            </button>
+            
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-[#1e2128] border border-[#2b2f38] rounded-xl shadow-lg overflow-hidden">
+                <Link 
+                  to="/profile"
+                  className="block px-4 py-2 text-sm hover:bg-[#2b2f38] transition-colors"
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  프로필
+                </Link>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-[#2b2f38] transition-colors"
+                >
+                  로그아웃
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button 
+            onClick={handleGoogleLogin}
+            className="flex items-center gap-2 rounded-xl bg-white text-gray-800 hover:bg-gray-100 px-4 py-2 text-sm transition-colors"
+          >
+            <img src="/google-icon.svg" alt="Google" className="w-4 h-4" />
+            Google로 계속하기
+          </button>
+        )}
       </nav>
     </header>
   );

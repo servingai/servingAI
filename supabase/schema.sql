@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS tool_categories CASCADE;
 DROP TABLE IF EXISTS tools CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
 DROP TABLE IF EXISTS profiles CASCADE;
+DROP TABLE IF EXISTS user_profiles CASCADE;
 
 -- Create profiles table for user information
 CREATE TABLE profiles (
@@ -13,6 +14,20 @@ CREATE TABLE profiles (
   email TEXT,
   name TEXT,
   avatar_url TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL
+);
+
+-- Create user_profiles table
+CREATE TABLE user_profiles (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+  full_name TEXT,
+  avatar_url TEXT,
+  job_category TEXT,
+  job_title TEXT,
+  years_of_experience INTEGER,
+  organization TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL
 );
 
@@ -50,18 +65,18 @@ CREATE TABLE tool_categories (
 -- Create reviews table for user reviews
 CREATE TABLE reviews (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  tool_id UUID REFERENCES tools ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
+  tool_id UUID REFERENCES tools(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
-  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL
 );
 
 -- Create favorites table for user favorites
 CREATE TABLE favorites (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  tool_id UUID REFERENCES tools ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
+  tool_id UUID REFERENCES tools(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL,
   UNIQUE(tool_id, user_id)
 );
@@ -73,6 +88,7 @@ ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tool_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Public profiles are viewable by everyone"
@@ -86,6 +102,19 @@ CREATE POLICY "Users can insert their own profile"
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
+
+-- User Profiles policies
+CREATE POLICY "Public user_profiles are viewable by everyone"
+  ON user_profiles FOR SELECT
+  USING (TRUE);
+
+CREATE POLICY "Users can insert their own user_profile"
+  ON user_profiles FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own user_profile"
+  ON user_profiles FOR UPDATE
+  USING (auth.uid() = user_id);
 
 -- Tools policies
 CREATE POLICY "Tools are viewable by everyone"
@@ -107,9 +136,9 @@ CREATE POLICY "Reviews are viewable by everyone"
   ON reviews FOR SELECT
   USING (TRUE);
 
-CREATE POLICY "Authenticated users can insert reviews"
+CREATE POLICY "Users can insert their own reviews"
   ON reviews FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can update own reviews"
   ON reviews FOR UPDATE
@@ -124,9 +153,9 @@ CREATE POLICY "Favorites are viewable by everyone"
   ON favorites FOR SELECT
   USING (TRUE);
 
-CREATE POLICY "Authenticated users can insert favorites"
+CREATE POLICY "Users can insert their own favorites"
   ON favorites FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own favorites"
   ON favorites FOR DELETE

@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import Home from './pages/Home';
 import ToolDetail from './pages/ToolDetail';
 import Profile from './pages/Profile';
-import Auth from './components/Auth';
+import { OnboardingForm } from './components/auth/OnboardingForm';
 
 function AppContent() {
-  const [showAuth, setShowAuth] = useState(false);
   const navigate = useNavigate();
 
   const handleSearch = (query) => {
@@ -17,17 +17,14 @@ function AppContent() {
 
   return (
     <div className="bg-gray-900 text-white min-h-screen">
-      <Header 
-        onLoginClick={() => setShowAuth(true)}
-        onSearch={handleSearch}
-      />
+      <Header onSearch={handleSearch} />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/tool/:id" element={<ToolDetail />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/onboarding" element={<OnboardingForm />} />
       </Routes>
       <Navigation />
-      {showAuth && <Auth onClose={() => setShowAuth(false)} />}
     </div>
   );
 }
@@ -35,7 +32,9 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </Router>
   );
 }

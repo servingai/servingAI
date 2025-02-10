@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../config/supabase';
+import { ReviewSection } from '../components/reviews/ReviewSection';
 
 const ToolDetail = () => {
   const { id } = useParams();
   const [tool, setTool] = useState(null);
-  const [reviews, setReviews] = useState([]);
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     fetchToolDetails();
-    fetchReviews();
   }, [id]);
 
   const fetchToolDetails = async () => {
@@ -33,32 +32,9 @@ const ToolDetail = () => {
         throw error;
       }
       
-      console.log('Tool details:', data); // 디버깅용 로그
       setTool(data);
     } catch (error) {
       console.error('Error:', error);
-    }
-  };
-
-  const fetchReviews = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select(`
-          *,
-          user:user_id (
-            email,
-            name,
-            avatar_url
-          )
-        `)
-        .eq('tool_id', id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setReviews(data);
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
     }
   };
 
@@ -167,33 +143,7 @@ const ToolDetail = () => {
 
       {/* Reviews Section */}
       <div className="bg-[#1e2128] rounded-xl p-6 border border-[#2b2f38]">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold">리뷰</h2>
-          <button className="bg-[#2b2f38] hover:bg-[#3d4251] px-4 py-2 rounded-lg text-sm transition-colors">
-            리뷰 작성
-          </button>
-        </div>
-        
-        <div className="space-y-6">
-          {reviews.map((review) => (
-            <div key={review.id} className="border-t border-[#2b2f38] pt-6">
-              <div className="flex items-center gap-3 mb-3">
-                <img
-                  src={review.user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.user.name)}&background=2b2f38&color=fff`}
-                  alt={review.user.name}
-                  className="w-10 h-10 rounded-full bg-[#2b2f38]"
-                />
-                <div>
-                  <p className="font-medium">{review.user.name}</p>
-                  <p className="text-sm text-gray-400">
-                    {new Date(review.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              <p className="text-gray-300">{review.content}</p>
-            </div>
-          ))}
-        </div>
+        <ReviewSection toolId={id} />
       </div>
     </main>
   );
