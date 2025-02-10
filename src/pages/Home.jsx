@@ -265,7 +265,7 @@ const Home = () => {
                 onClick={() => setShowCategoryFilter(!showCategoryFilter)}
                 className="px-4 py-2 bg-[#1e2128] border border-[#2b2f38] rounded-xl hover:border-[#3d4251] transition-colors flex items-center gap-2"
               >
-                <span>카테고리</span>
+                <span className="text-sm">카테고리</span>
                 <ChevronDownIcon className={`w-4 h-4 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} />
               </button>
               
@@ -310,7 +310,7 @@ const Home = () => {
                 onClick={() => setShowPriceFilter(!showPriceFilter)}
                 className="px-4 py-2 bg-[#1e2128] border border-[#2b2f38] rounded-xl hover:border-[#3d4251] transition-colors flex items-center gap-2"
               >
-                <span>가격</span>
+                <span className="text-sm">가격</span>
                 <ChevronDownIcon className={`w-4 h-4 transition-transform ${showPriceFilter ? 'rotate-180' : ''}`} />
               </button>
               
@@ -342,7 +342,7 @@ const Home = () => {
               className="px-4 py-2 bg-[#1e2128] border border-[#2b2f38] rounded-xl hover:border-[#3d4251] transition-colors flex items-center gap-2"
             >
               <ArrowPathIcon className="w-4 h-4" />
-              <span>필터 초기화</span>
+              <span className="text-sm">초기화</span>
             </button>
           </div>
         </div>
