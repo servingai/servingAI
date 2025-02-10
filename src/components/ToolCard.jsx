@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 
-const ToolCard = ({ title, description, category, price_type, image_url }) => {
+const ToolCard = ({ title, description, price_type, image_url, tool_categories }) => {
+  console.log('ToolCard props:', { title, description, price_type, image_url, tool_categories }); // 디버깅용 로그
+
   const [imageError, setImageError] = useState(false);
 
   const getPriceTypeLabel = (type) => {
@@ -43,9 +45,9 @@ const ToolCard = ({ title, description, category, price_type, image_url }) => {
 
   return (
     <div className="bg-[#1e2128] rounded-xl overflow-hidden border border-[#2b2f38] hover:border-[#3d4251] transition-colors h-[360px] flex flex-col">
-      <div className="w-full h-[180px] bg-[#1e2128] flex-shrink-0">
+      <div className="w-full h-[180px] bg-white flex-shrink-0 p-6">
         {!imageError ? (
-          <div className="w-full h-full flex items-center justify-center p-6">
+          <div className="w-full h-full flex items-center justify-center">
             <img
               src={image_url}
               className="max-w-full max-h-full object-contain"
@@ -60,9 +62,14 @@ const ToolCard = ({ title, description, category, price_type, image_url }) => {
       <div className="flex-1 p-4 flex flex-col min-h-0">
         <div className="flex-1">
           <div className="flex flex-wrap gap-2">
-            <span className="text-xs bg-[#2b2f38] text-gray-300 px-2 py-1 rounded-full">
-              {category}
-            </span>
+            {Array.isArray(tool_categories) && [...new Set(tool_categories.map(tc => tc.categories.name))].map((categoryName) => (
+              <span
+                key={categoryName}
+                className="text-xs bg-[#2b2f38] text-gray-300 px-2 py-1 rounded-full"
+              >
+                {categoryName}
+              </span>
+            ))}
             <span className={`text-xs px-2 py-1 rounded-full ${getPriceTypeColor(price_type)}`}>
               {getPriceTypeLabel(price_type)}
             </span>

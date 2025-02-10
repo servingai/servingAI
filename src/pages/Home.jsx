@@ -6,11 +6,13 @@ import { supabase } from '../config/supabase';
 const Home = () => {
   const [searchParams] = useSearchParams();
   const [tools, setTools] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [category, setCategory] = useState('전체 카테고리');
   const [priceType, setPriceType] = useState('all');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    fetchCategories();
     fetchTools();
   }, [category, priceType, searchParams]);
 
@@ -19,8 +21,18 @@ const Home = () => {
       setLoading(true);
       const searchQuery = searchParams.get('search');
       
-      // 기본 쿼리 설정
-      let query = supabase.from('tools').select('*');
+      let query = supabase
+        .from('tools')
+        .select(`
+          *,
+          tool_categories (
+            categories (
+              id,
+              name
+            )
+          )
+        `)
+        .order('title');
 
       // 검색어가 있는 경우
       if (searchQuery) {
@@ -38,16 +50,9 @@ const Home = () => {
         } else {
           // 일반 검색인 경우
           query = query.or(
-            `title.ilike.%${searchLower}%,` +
-            `description.ilike.%${searchLower}%,` +
-            `category.ilike.%${searchLower}%`
+            `title.ilike.%${searchLower}%,description.ilike.%${searchLower}%`
           );
         }
-      }
-      
-      // 카테고리 필터
-      if (category !== '전체 카테고리') {
-        query = query.eq('category', category);
       }
       
       // 가격 타입 필터
@@ -55,37 +60,44 @@ const Home = () => {
         query = query.eq('price_type', priceType);
       }
 
-      let { data, error } = await query;
+      const { data: tools, error } = await query;
       
       if (error) {
-        console.error('Supabase query error:', error);
+        console.error('Error fetching tools:', error);
         throw error;
       }
 
-      // features 배열에서 추가 필터링
-      if (searchQuery && data && !['무료', '유료', '무료체험'].includes(searchQuery.trim())) {
-        const searchLower = searchQuery.toLowerCase().trim();
-        data = data.filter(tool => 
-          tool.features.some(feature =>
-            feature.toLowerCase().includes(searchLower)
-          )
+      // 중복 제거 및 카테고리 필터링
+      let filteredTools = tools ? [...new Set(tools.map(t => t.id))].map(id => tools.find(t => t.id === id)) : [];
+      
+      if (category !== '전체 카테고리') {
+        filteredTools = filteredTools.filter(tool => 
+          tool.tool_categories?.some(tc => tc.categories?.name === category)
         );
       }
 
-      console.log('Search results:', {
-        searchQuery,
-        category,
-        priceType,
-        resultCount: data?.length,
-        results: data
-      });
-
-      setTools(data || []);
+      console.log('Fetched tools:', filteredTools); // 디버깅용 로그
+      setTools(filteredTools);
     } catch (error) {
-      console.error('Error fetching tools:', error);
+      console.error('Error:', error);
       setTools([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('name')
+        .order('name');
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
     }
   };
 
@@ -99,13 +111,11 @@ const Home = () => {
             onChange={(e) => setCategory(e.target.value)}
           >
             <option>전체 카테고리</option>
-            <option>문서 작성</option>
-            <option>데이터 분석</option>
-            <option>이미지 생성</option>
-            <option>오디오 생성</option>
-            <option>비디오 생성</option>
-            <option>코딩</option>
-            <option>디자인</option>
+            {categories.map((cat) => (
+              <option key={cat.name} value={cat.name}>
+                {cat.name}
+              </option>
+            ))}
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
             <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -138,7 +148,13 @@ const Home = () => {
         ) : tools.length > 0 ? (
           tools.map((tool) => (
             <Link key={tool.id} to={`/tool/${tool.id}`}>
-              <ToolCard {...tool} />
+              <ToolCard 
+                title={tool.title}
+                description={tool.description}
+                price_type={tool.price_type}
+                image_url={tool.image_url}
+                tool_categories={tool.tool_categories || []}
+              />
             </Link>
           ))
         ) : (

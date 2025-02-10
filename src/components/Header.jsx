@@ -24,7 +24,7 @@ const Header = ({ onLoginClick, onSearch }) => {
   return (
     <header className="fixed top-0 w-full z-50 bg-gray-900/95 backdrop-blur">
       <nav className="px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="text-xl font-['Pacifico']">ServingAI</Link>
+        <Link to="/" className="text-xl font-['Roboto'] font-bold tracking-wide">ServingAI</Link>
         <div className="relative flex-1 mx-4">
           <input
             type="text"
