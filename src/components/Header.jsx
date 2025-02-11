@@ -61,8 +61,12 @@ const Header = ({ onSearch }) => {
         console.error('Error logging out:', error.message);
         return;
       }
+      
+      // 드롭다운 메뉴 닫기
       setShowUserMenu(false);
-      window.location.href = '/';
+      
+      // 페이지 새로고침으로 상태 초기화
+      window.location.reload();
     } catch (error) {
       console.error('Error logging out:', error.message);
     }

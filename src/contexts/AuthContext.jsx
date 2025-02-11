@@ -6,23 +6,47 @@ const AuthContext = createContext({});
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState(null);
 
   useEffect(() => {
     checkUser();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event);
+      console.log('Session:', session);
+      
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setSession(null);
+      } else if (session) {
+        setUser(session.user);
+        setSession(session);
+      }
+      
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const checkUser = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      
+      if (session) {
+        setUser(session.user);
+        setSession(session);
+      } else {
+        setUser(null);
+        setSession(null);
+      }
     } catch (error) {
       console.error('Error checking auth status:', error);
+      setUser(null);
+      setSession(null);
     } finally {
       setLoading(false);
     }
@@ -30,8 +54,16 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // 명시적으로 상태 초기화
       setUser(null);
+      setSession(null);
+      
+      // 로컬 스토리지 클리어
+      localStorage.removeItem('supabase.auth.token');
+      
       return { error: null };
     } catch (error) {
       console.error('Error signing out:', error);
@@ -41,8 +73,10 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    session,
     loading,
-    signOut
+    signOut,
+    checkUser
   };
 
   return (
