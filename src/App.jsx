@@ -17,15 +17,17 @@ function AppContent() {
   };
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen pb-[72px]">
+    <div className="bg-[#13151c] text-white min-h-screen flex flex-col">
       <Header onSearch={handleSearch} />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/tool/:id" element={<ToolDetail />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/favorites" element={<Favorites />} />
-        <Route path="/onboarding" element={<OnboardingForm />} />
-      </Routes>
+      <main className="flex-1 pt-[52px]">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/tool/:id" element={<ToolDetail />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/onboarding" element={<OnboardingForm />} />
+        </Routes>
+      </main>
       <BottomNavigation />
     </div>
   );

@@ -255,10 +255,11 @@ const Home = () => {
   };
 
   return (
-    <main className="pt-[60px] pb-[140px] min-h-screen bg-[#171717]">
-      <div className="sticky top-[60px] z-40 bg-[#171717] border-b border-[#2b2f38]">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="py-4 flex items-center gap-2">
+    <div className="bg-[#13151c]">
+      {/* 필터 영역 */}
+      <div className="sticky top-[52px] bg-[#13151c] z-40">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center gap-2 px-4 py-3">
             {/* 카테고리 필터 */}
             <div className="relative" ref={categoryFilterRef}>
               <button
@@ -348,67 +349,69 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
-        {loading ? (
-          <div className="col-span-full text-center py-8">로딩중...</div>
-        ) : tools.length > 0 ? (
-          tools.map((tool) => (
-            <ToolCard
-              key={tool.id}
-              id={tool.id}
-              title={tool.title}
-              description={tool.description}
-              price_type={tool.price_type}
-              image_url={tool.image_url}
-              categories={tool.categories}
-            />
-          ))
-        ) : (
-          <div className="col-span-full text-center py-8">
-            해당하는 AI 도구가 없습니다.
-          </div>
-        )}
-      </div>
-
-      <div className="fixed right-4 bottom-20 z-50 flex flex-col items-end gap-4">
-        {showFabMenu && (
-          <>
-            <div className="flex items-center gap-2">
-              <span className="px-4 py-2 bg-[#1e2128] border border-[#2b2f38] rounded-xl text-base font-medium shadow-lg whitespace-nowrap">
-                문의하기
-              </span>
-              <button
-                onClick={() => handleMenuItemClick('contact')}
-                className="w-14 h-14 bg-[#3B82F6] rounded-full shadow-lg flex items-center justify-center hover:bg-[#2563EB] transition-colors"
-              >
-                <ChatBubbleLeftIcon className="w-7 h-7 text-white" />
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-4 py-2 bg-[#1e2128] border border-[#2b2f38] rounded-xl text-base font-medium shadow-lg whitespace-nowrap">
-                도구 추가요청
-              </span>
-              <button
-                onClick={() => handleMenuItemClick('request')}
-                className="w-14 h-14 bg-[#3B82F6] rounded-full shadow-lg flex items-center justify-center hover:bg-[#2563EB] transition-colors"
-              >
-                <PaperAirplaneIcon className="w-7 h-7 text-white" />
-              </button>
-            </div>
-          </>
-        )}
-        <button
-          onClick={() => setShowFabMenu(!showFabMenu)}
-          className="w-14 h-14 bg-[#3B82F6] rounded-full shadow-lg flex items-center justify-center hover:bg-[#2563EB] transition-colors"
-        >
-          {showFabMenu ? (
-            <XMarkIcon className="w-7 h-7 text-white" />
+      <main className="pt-[52px] pb-[140px] min-h-screen bg-[#13151c]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+          {loading ? (
+            <div className="col-span-full text-center py-8">로딩중...</div>
+          ) : tools.length > 0 ? (
+            tools.map((tool) => (
+              <ToolCard
+                key={tool.id}
+                id={tool.id}
+                title={tool.title}
+                description={tool.description}
+                price_type={tool.price_type}
+                image_url={tool.image_url}
+                categories={tool.categories}
+              />
+            ))
           ) : (
-            <PlusIcon className="w-7 h-7 text-white" />
+            <div className="col-span-full text-center py-8">
+              해당하는 AI 도구가 없습니다.
+            </div>
           )}
-        </button>
-      </div>
-    </main>
+        </div>
+
+        <div className="fixed right-4 bottom-20 z-50 flex flex-col items-end gap-4">
+          {showFabMenu && (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="px-4 py-2 bg-[#1e2128] border border-[#2b2f38] rounded-xl text-base font-medium shadow-lg whitespace-nowrap">
+                  문의하기
+                </span>
+                <button
+                  onClick={() => handleMenuItemClick('contact')}
+                  className="w-14 h-14 bg-[#3B82F6] rounded-full shadow-lg flex items-center justify-center hover:bg-[#2563EB] transition-colors"
+                >
+                  <ChatBubbleLeftIcon className="w-7 h-7 text-white" />
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-4 py-2 bg-[#1e2128] border border-[#2b2f38] rounded-xl text-base font-medium shadow-lg whitespace-nowrap">
+                  도구 추가요청
+                </span>
+                <button
+                  onClick={() => handleMenuItemClick('request')}
+                  className="w-14 h-14 bg-[#3B82F6] rounded-full shadow-lg flex items-center justify-center hover:bg-[#2563EB] transition-colors"
+                >
+                  <PaperAirplaneIcon className="w-7 h-7 text-white" />
+                </button>
+              </div>
+            </>
+          )}
+          <button
+            onClick={() => setShowFabMenu(!showFabMenu)}
+            className="w-14 h-14 bg-[#3B82F6] rounded-full shadow-lg flex items-center justify-center hover:bg-[#2563EB] transition-colors"
+          >
+            {showFabMenu ? (
+              <XMarkIcon className="w-7 h-7 text-white" />
+            ) : (
+              <PlusIcon className="w-7 h-7 text-white" />
+            )}
+          </button>
+        </div>
+      </main>
+    </div>
   );
 };
 

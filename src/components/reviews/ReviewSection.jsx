@@ -6,6 +6,7 @@ import { ko } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { jobCategories } from '../../constants/jobCategories';
 
 export const ReviewSection = ({ toolId, className, isProfileView }) => {
@@ -460,15 +461,17 @@ export const ReviewSection = ({ toolId, className, isProfileView }) => {
                         setEditingReview(review);
                         setEditedReviewContent(review.content);
                       }}
-                      className="text-gray-400 hover:text-white transition-colors"
+                      className="text-gray-400 hover:text-white transition-colors p-1"
+                      title="리뷰 수정"
                     >
-                      수정
+                      <PencilSquareIcon className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDeleteReview(review.id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                      title="리뷰 삭제"
                     >
-                      삭제
+                      <TrashIcon className="w-5 h-5" />
                     </button>
                   </div>
                 )}
