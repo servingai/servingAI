@@ -8,7 +8,7 @@ const Header = ({ onSearch }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -56,16 +56,13 @@ const Header = ({ onSearch }) => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await signOut();
       if (error) {
         console.error('Error logging out:', error.message);
         return;
       }
       setShowUserMenu(false);
-      // 로그아웃이 성공적으로 완료된 후에 리디렉션
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
+      window.location.href = '/';
     } catch (error) {
       console.error('Error logging out:', error.message);
     }
