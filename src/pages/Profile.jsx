@@ -421,72 +421,77 @@ const Profile = () => {
       {/* 프로필 정보 */}
       {profile && (
         <div className="bg-[#1e2128] rounded-xl p-6 mb-6 border border-[#2b2f38]">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-[#2b2f38] flex-shrink-0">
-              {profile.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt={profile.full_name}
-                  className="w-full h-full rounded bg-white object-contain p-1"
-                />
-              ) : (
-                <UserCircleIcon className="w-full h-full text-gray-400" />
-              )}
+          {/* 상단 프로필 영역 */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-6">
+              {/* 프로필 이미지 */}
+              <div className="flex items-center justify-center">
+                <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt="프로필 이미지"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <UserCircleIcon className="w-full h-full text-gray-400" />
+                  )}
+                </div>
+              </div>
+              {/* 사용자 정보 */}
+              <div className="flex flex-col justify-center">
+                <h2 className="text-lg font-semibold text-white">{profile.full_name || '사용자'}</h2>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">{profile.full_name || '사용자'}</h2>
+            {/* 버튼 영역 */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsEditingProfile(true)}
+                className="text-gray-400 hover:text-white transition-colors"
+                title="프로필 수정"
+              >
+                <PencilSquareIcon className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="text-gray-400 hover:text-red-500 transition-colors"
+                title="로그아웃"
+              >
+                <ArrowRightOnRectangleIcon className="w-5 h-5" />
+              </button>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsEditingProfile(true)}
-              className="text-gray-400 hover:text-white transition-colors p-1"
-              title="프로필 수정"
-            >
-              <PencilSquareIcon className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-red-500 transition-colors p-1"
-              title="로그아웃"
-            >
-              <ArrowRightOnRectangleIcon className="w-5 h-5" />
-            </button>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-400">직군</h3>
+                <p className="mt-1 text-base font-medium text-white">
+                  {jobCategories.find(cat => cat.value === profile.job_category)?.label || '미설정'}
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-400">직무</h3>
+                <p className="mt-1 text-base font-medium text-white">
+                  {profile.job_title || '미설정'}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-400">연차</h3>
+                <p className="mt-1 text-base font-medium text-white">
+                  {profile.years_of_experience ? `${profile.years_of_experience}년차` : '미설정'}
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-400">소속</h3>
+                <p className="mt-1 text-base font-medium text-white">
+                  {profile.organization || '미설정'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-400">직군</h3>
-              <p className="mt-1 text-base font-medium text-white">
-                {jobCategories.find(cat => cat.value === profile.job_category)?.label || '미설정'}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-400">직무</h3>
-              <p className="mt-1 text-base font-medium text-white">
-                {profile.job_title || '미설정'}
-              </p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-400">연차</h3>
-              <p className="mt-1 text-base font-medium text-white">
-                {profile.years_of_experience ? `${profile.years_of_experience}년차` : '미설정'}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-400">소속</h3>
-              <p className="mt-1 text-base font-medium text-white">
-                {profile.organization || '미설정'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
       )}
 
       {/* 작성한 리뷰 */}

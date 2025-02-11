@@ -15,12 +15,25 @@ const Auth = ({ onClose }) => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+
+        // 로그인 성공 후 프로필 정보 체크
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('job_category, job_title')
+          .eq('user_id', data.user.id)
+          .single();
+
         onClose();
+        
+        // 필수 프로필 정보가 없으면 온보딩으로 리다이렉트
+        if (!profile?.job_category || !profile?.job_title) {
+          navigate('/onboarding');
+        }
       } else {
         // 회원가입
         const { data: authData, error: signUpError } = await supabase.auth.signUp({

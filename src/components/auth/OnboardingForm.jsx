@@ -62,34 +62,46 @@ export const OnboardingForm = () => {
     setIsLoading(true);
     setError(null);
 
-    try {
-      // 먼저 기존 프로필이 있는지 확인
-      const { data: existingProfile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+    // 필수 필드 검증
+    if (!formData.job_category || !formData.job_title) {
+      setError('직무 분야와 직무는 필수 입력 항목입니다.');
+      setIsLoading(false);
+      return;
+    }
 
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/');
+        return;
+      }
+
+      // 프로필 데이터 준비
       const profileData = {
         user_id: user.id,
-        full_name: user.user_metadata?.full_name || '',
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
         avatar_url: user.user_metadata?.avatar_url || '',
         job_category: formData.job_category,
         job_title: formData.job_title,
-        years_of_experience: parseInt(formData.years_of_experience) || null,
-        organization: formData.organization
+        years_of_experience: parseInt(formData.years_of_experience) || 0,
+        organization: formData.organization || ''
       };
+
+      // 기존 프로필 확인 및 업데이트/생성
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
 
       let error;
       if (existingProfile) {
-        // 기존 프로필이 있으면 업데이트
         const { error: updateError } = await supabase
           .from('user_profiles')
           .update(profileData)
           .eq('user_id', user.id);
         error = updateError;
       } else {
-        // 새 프로필 생성
         const { error: insertError } = await supabase
           .from('user_profiles')
           .insert([profileData]);
@@ -97,10 +109,12 @@ export const OnboardingForm = () => {
       }
 
       if (error) throw error;
-      
+
+      // 성공 메시지 표시 후 홈으로 이동
+      alert('프로필 정보가 저장되었습니다.');
       navigate('/');
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error('Error updating profile:', error);
       setError('프로필 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
