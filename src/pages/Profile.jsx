@@ -351,17 +351,15 @@ const Profile = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
+          redirectTo: window.location.origin
+        }
       });
+      if (error) throw error;
     } catch (error) {
-      console.error('Error logging in:', error);
+      console.error('Error logging in with Google:', error);
     }
   };
 
@@ -425,10 +423,15 @@ const Profile = () => {
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <h2 className="text-lg text-gray-200 mb-4">로그인 후 더 많은 기능을 이용해보세요!</h2>
         <button
-          onClick={() => navigate('/auth')}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+          onClick={handleGoogleLogin}
+          className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-[#2b2f38] rounded-lg hover:bg-[#3d4251] transition-colors"
         >
-          로그인하기
+          <img
+            src="/google-icon.svg"
+            alt="Google"
+            className="w-4 h-4"
+          />
+          로그인
         </button>
       </div>
     );
