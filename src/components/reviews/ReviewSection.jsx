@@ -56,43 +56,51 @@ export const ReviewSection = ({ toolId, className, isProfileView }) => {
           review_likes (
             user_id
           ),
-          review_tool_mentions!inner (
+          review_tool_mentions!review_tool_mentions_review_id_fkey (
             tools!review_tool_mentions_tool_id_fkey (
               id,
               title,
               image_url,
               website_url
             )
-          ),
-          profiles!reviews_user_id_fkey (
-            user_id,
-            full_name,
-            avatar_url,
-            job_title,
-            organization
           )
         `)
         .eq('tool_id', toolId)
         .order('created_at', { ascending: false });
 
       if (reviewsError) throw reviewsError;
-      
-      console.log('Reviews data:', reviewsData);
 
-      const reviewsWithData = reviewsData.map(review => ({
+      // 사용자 프로필 정보 가져오기
+      const userIds = reviewsData?.map(review => review.user_id) || [];
+      const { data: profilesData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .in('user_id', userIds);
+
+      // 프로필 데이터를 매핑하여 캐시
+      const profilesMap = (profilesData || []).reduce((acc, profile) => {
+        acc[profile.user_id] = profile;
+        return acc;
+      }, {});
+
+      const reviewsWithData = reviewsData?.map(review => ({
         ...review,
         tool: {
           ...review.tools,
           logo_url: review.tools?.image_url
         },
-        profile: review.profiles,
-        likes: review.review_likes ? review.review_likes.length : 0,
-        isLiked: review.review_likes ? review.review_likes.some(like => like.user_id === user?.id) : false,
+        profile: profilesMap[review.user_id] || {
+          full_name: '알 수 없는 사용자',
+          avatar_url: '/default-avatar.png',
+          job_title: '직무 미설정'
+        },
+        likes: review.review_likes?.length || 0,
+        isLiked: review.review_likes?.some(like => like.user_id === user?.id) || false,
         mentionedTools: review.review_tool_mentions?.map(mention => ({
           ...mention.tools,
           logo_url: mention.tools?.image_url
         })) || []
-      }));
+      })) || [];
 
       console.log('Processed reviews:', reviewsWithData);
       setReviews(reviewsWithData);
