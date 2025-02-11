@@ -6,6 +6,7 @@ import { ko } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { jobCategories } from '../constants/jobCategories';
 import { useAuth } from '../contexts/AuthContext';
+import { HeartIcon as HeartOutline, HeartIcon as HeartSolid, UserCircleIcon } from '@heroicons/react/24/solid';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [editingReview, setEditingReview] = useState(null);
+  const [editedReviewContent, setEditedReviewContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -65,12 +67,19 @@ const Profile = () => {
         .from('reviews')
         .select(`
           *,
-          tool:tools (
+          review_likes (
+            user_id
+          ),
+          review_tool_mentions (
+            tools (
+              id,
+              title
+            )
+          ),
+          tools (
             id,
             title,
-            description,
-            image_url,
-            price_type
+            image_url
           )
         `)
         .eq('user_id', authUser.id)
@@ -86,10 +95,10 @@ const Profile = () => {
       // 이미지 URL 유효성 검사
       const processedReviews = reviewsData?.map(review => ({
         ...review,
-        tool: review.tool ? {
-          ...review.tool,
-          image_url: review.tool.image_url || null // 빈 문자열이나 undefined인 경우 null로 처리
-        } : null
+        tool: review.tools,
+        likes: review.review_likes ? review.review_likes.length : 0,
+        isLiked: review.review_likes ? review.review_likes.some(like => like.user_id === authUser?.id) : false,
+        mentionedTools: review.review_tool_mentions?.map(mention => mention.tools) || []
       }));
 
       console.log('Processed reviews data:', processedReviews);
@@ -152,6 +161,154 @@ const Profile = () => {
       setError('리뷰 삭제 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 리뷰 수정 처리
+  const handleEditReview = async (reviewId, content) => {
+    try {
+      // 기존 tool mentions 삭제
+      const { error: deleteMentionsError } = await supabase
+        .from('review_tool_mentions')
+        .delete()
+        .eq('review_id', reviewId);
+
+      if (deleteMentionsError) throw deleteMentionsError;
+
+      // 새로운 content와 mentions 처리
+      const { processedContent, toolMentions } = processReviewContent(content);
+
+      // 리뷰 내용 업데이트
+      const { error: updateError } = await supabase
+        .from('reviews')
+        .update({ content: processedContent || '' })
+        .eq('id', reviewId)
+        .eq('user_id', authUser.id);
+
+      if (updateError) throw updateError;
+
+      // 새로운 mentions 추가
+      if (toolMentions && toolMentions.length > 0) {
+        const { error: mentionError } = await supabase
+          .from('review_tool_mentions')
+          .insert(
+            toolMentions.map(mentionedToolId => ({
+              review_id: reviewId,
+              tool_id: mentionedToolId
+            }))
+          );
+
+        if (mentionError) throw mentionError;
+      }
+
+      // 리뷰 목록 새로고침
+      fetchUserData();
+      setEditingReview(null);
+    } catch (error) {
+      console.error('Error editing review:', error);
+      setError('리뷰 수정 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 리뷰 내용에서 @mentions 처리
+  const processReviewContent = (content) => {
+    const mentionRegex = /@(\w+)/g;
+    const toolMentions = [];
+    let lastIndex = 0;
+    const parts = [];
+
+    content.replace(mentionRegex, (match, toolName, index) => {
+      const tool = jobCategories.find(t => 
+        t.value.toLowerCase() === toolName.toLowerCase() ||
+        t.value.replace(/\s+/g, '').toLowerCase() === toolName.toLowerCase()
+      );
+      
+      if (tool) {
+        toolMentions.push(tool.value);
+        parts.push(content.slice(lastIndex, index));
+        parts.push(`@[${tool.label}](${tool.value})`);
+        lastIndex = index + match.length;
+      } else {
+        parts.push(content.slice(lastIndex, index + match.length));
+        lastIndex = index + match.length;
+      }
+    });
+
+    parts.push(content.slice(lastIndex));
+    return {
+      processedContent: parts.join(''),
+      toolMentions
+    };
+  };
+
+  // 리뷰 내용 렌더링
+  const renderReviewContent = (content) => {
+    if (!content) return '';
+
+    const parts = [];
+    let lastIndex = 0;
+    const mentionRegex = /@\[(.*?)\]\((.*?)\)/g;
+    let match;
+
+    while ((match = mentionRegex.exec(content)) !== null) {
+      // 매치 이전의 일반 텍스트 추가
+      if (match.index > lastIndex) {
+        parts.push(content.slice(lastIndex, match.index));
+      }
+
+      // 도구 링크 추가
+      const [, toolName, toolId] = match;
+      parts.push(
+        <Link
+          key={`${toolId}-${match.index}`}
+          to={`/tool/${toolId}`}
+          className="text-blue-500 hover:underline"
+        >
+          @{toolName}
+        </Link>
+      );
+
+      lastIndex = mentionRegex.lastIndex;
+    }
+
+    // 남은 텍스트 추가
+    if (lastIndex < content.length) {
+      parts.push(content.slice(lastIndex));
+    }
+
+    return parts;
+  };
+
+  // 좋아요 토글
+  const handleLikeToggle = async (reviewId) => {
+    if (!authUser) return;
+
+    try {
+      const { data: existingLike } = await supabase
+        .from('review_likes')
+        .select()
+        .eq('review_id', reviewId)
+        .eq('user_id', authUser.id)
+        .single();
+
+      if (existingLike) {
+        // 좋아요 취소
+        await supabase
+          .from('review_likes')
+          .delete()
+          .eq('review_id', reviewId)
+          .eq('user_id', authUser.id);
+      } else {
+        // 좋아요 추가
+        await supabase
+          .from('review_likes')
+          .insert([{ review_id: reviewId, user_id: authUser.id }]);
+      }
+
+      // 리뷰 목록 새로고침
+      fetchUserData();
+    } catch (error) {
+      console.error('Error toggling like:', error);
     }
   };
 
@@ -274,9 +431,7 @@ const Profile = () => {
                     className="w-full h-full rounded bg-white object-contain p-1"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-gray-400">
-                    {profile.full_name?.charAt(0) || 'U'}
-                  </div>
+                  <UserCircleIcon className="w-full h-full text-gray-400" />
                 )}
               </div>
               <div>
@@ -343,58 +498,91 @@ const Profile = () => {
                 className="p-4 rounded-lg border border-[#2b2f38] hover:border-gray-600 transition-colors"
               >
                 <div className="flex justify-between items-start mb-3">
-                  <Link
-                    to={`/tool/${review.tool_id}`}
-                    className="group flex items-center gap-3"
-                  >
-                    <div className="w-10 h-10 flex-shrink-0">
-                      {review.tool?.image_url ? (
-                        <img
-                          src={review.tool.image_url}
-                          alt={review.tool?.title}
-                          className="w-full h-full rounded bg-white object-contain p-1"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextElementSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div 
-                        className={`w-full h-full rounded bg-[#2b2f38] items-center justify-center ${!review.tool?.image_url ? 'flex' : 'hidden'}`}
-                      >
-                        <span className="text-lg font-bold text-gray-400">
-                          {review.tool?.title?.charAt(0) || '?'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
-                        {review.tool?.title || '알 수 없는 서비스'}
-                      </span>
-                      <span className="text-sm text-gray-400">
-                        {formatDate(review.created_at)}
-                      </span>
-                    </div>
-                  </Link>
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={review.tool?.image_url || '/default-tool-image.png'}
+                      alt={review.tool?.title}
+                      className="w-10 h-10 rounded-lg object-cover"
+                    />
+                    <Link
+                      to={`/tool/${review.tool?.id}`}
+                      className="text-blue-500 hover:underline font-medium"
+                    >
+                      {review.tool?.title || '삭제된 도구'}
+                    </Link>
+                  </div>
                   <div className="flex items-center gap-3">
                     <button
-                      onClick={() => setEditingReview(review)}
-                      className="text-sm text-gray-400 hover:text-white transition-colors"
+                      onClick={() => handleLikeToggle(review.id)}
+                      className="flex items-center space-x-1 text-sm"
                     >
-                      수정
+                      {review.isLiked ? (
+                        <HeartSolid className="w-5 h-5 text-red-500" />
+                      ) : (
+                        <HeartOutline className="w-5 h-5 text-gray-400" />
+                      )}
+                      <span className="text-gray-400">{review.likes}</span>
                     </button>
-                    <button
-                      onClick={() => handleDeleteReview(review.id)}
-                      className="text-sm text-gray-400 hover:text-white transition-colors"
-                    >
-                      삭제
-                    </button>
+                    {authUser?.id === review.user_id && (
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingReview(review);
+                            setEditedReviewContent(review.content);
+                          }}
+                          className="text-gray-400 hover:text-white transition-colors"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => handleDeleteReview(review.id)}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <p className="text-gray-300 whitespace-pre-wrap ml-[52px]">{review.content}</p>
-                <p className="text-sm text-gray-400 mt-2 ml-[52px]">
-                  {formatDate(review.created_at)}
-                </p>
+                {editingReview?.id === review.id ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editedReviewContent}
+                      onChange={(e) => setEditedReviewContent(e.target.value)}
+                      placeholder="AI도구 사용팁과 리뷰를 남겨보세요"
+                      className="w-full px-4 py-3 bg-[#1e2128] border border-[#2b2f38] rounded-xl text-sm focus:outline-none focus:border-[#3d4251] hover:border-[#3d4251] transition-colors"
+                      rows="3"
+                    />
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-gray-400">
+                        다른 도구를 태그하려면 '@'를 입력하세요
+                      </p>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setEditingReview(null)}
+                          className="px-4 py-2 rounded-xl text-sm font-medium transition-colors bg-gray-600 hover:bg-gray-700"
+                        >
+                          취소
+                        </button>
+                        <button
+                          onClick={() => handleEditReview(review.id, editedReviewContent)}
+                          className="px-4 py-2 rounded-xl text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-700"
+                        >
+                          수정하기
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-sm text-gray-200 whitespace-pre-wrap">
+                      {renderReviewContent(review.content)}
+                    </div>
+                    <div className="mt-2 text-sm text-gray-400">
+                      {formatDate(review.created_at)}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
