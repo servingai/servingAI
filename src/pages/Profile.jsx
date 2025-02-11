@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user: authUser } = useAuth();
+  const { user: authUser, signOut } = useAuth();
   const [profile, setProfile] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [editingReview, setEditingReview] = useState(null);
@@ -214,6 +214,34 @@ const Profile = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      // 1. Supabase 로그아웃
+      await supabase.auth.signOut();
+      
+      // 2. 로컬 스토리지 초기화
+      window.localStorage.clear();
+      
+      // 3. 세션 스토리지 초기화
+      window.sessionStorage.clear();
+      
+      // 4. 모든 쿠키 삭제
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i];
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+      }
+      
+      // 5. 페이지 새로고침 (강제 리로드)
+      window.location.reload(true);
+    } catch (error) {
+      console.error('Error logging out:', error);
+      alert('로그아웃 중 오류가 발생했습니다.');
+    }
+  };
+
   // 로그인하지 않은 경우 로그인 화면 표시
   if (!authUser) {
     return (
@@ -255,12 +283,20 @@ const Profile = () => {
                 <h2 className="text-xl font-bold text-white">{profile.full_name || '사용자'}</h2>
               </div>
             </div>
-            <button
-              onClick={() => setIsEditingProfile(true)}
-              className="px-4 py-2 bg-[#2b2f38] text-white rounded-lg text-sm hover:bg-[#3d4251] transition-colors"
-            >
-              프로필 수정
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditingProfile(true)}
+                className="px-4 py-2 text-sm bg-[#2b2f38] hover:bg-[#3d4251] rounded-lg transition-colors"
+              >
+                프로필 수정
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 text-sm bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors"
+              >
+                로그아웃
+              </button>
+            </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">

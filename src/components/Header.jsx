@@ -56,19 +56,10 @@ const Header = ({ onSearch }) => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await signOut();
-      if (error) {
-        console.error('Error logging out:', error.message);
-        return;
-      }
-      
-      // 드롭다운 메뉴 닫기
       setShowUserMenu(false);
-      
-      // 페이지 새로고침으로 상태 초기화
-      window.location.reload();
+      await signOut();
     } catch (error) {
-      console.error('Error logging out:', error.message);
+      console.error('Error in handleLogout:', error);
     }
   };
 
@@ -107,7 +98,7 @@ const Header = ({ onSearch }) => {
         {user ? (
           <div className="relative" ref={dropdownRef}>
             <button 
-              onClick={() => setShowUserMenu(!showUserMenu)}
+              onClick={() => navigate('/profile')}
               className="flex items-center gap-2 rounded-xl bg-[#2b2f38] hover:bg-[#3d4251] px-4 py-2 text-sm transition-colors"
             >
               <img 
