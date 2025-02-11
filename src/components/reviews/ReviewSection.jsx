@@ -42,42 +42,59 @@ export const ReviewSection = ({ toolId, className, isProfileView }) => {
   // 리뷰 목록 불러오기
   const fetchReviews = async () => {
     try {
+      console.log('Fetching reviews for toolId:', toolId);
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select(`
           *,
+          tools!reviews_tool_id_fkey (
+            id,
+            title,
+            image_url,
+            website_url
+          ),
           review_likes (
             user_id
           ),
-          review_tool_mentions (
-            tools (
+          review_tool_mentions!inner (
+            tools!review_tool_mentions_tool_id_fkey (
               id,
-              title
+              title,
+              image_url,
+              website_url
             )
+          ),
+          profiles!reviews_user_id_fkey (
+            user_id,
+            full_name,
+            avatar_url,
+            job_title,
+            organization
           )
         `)
         .eq('tool_id', toolId)
         .order('created_at', { ascending: false });
 
       if (reviewsError) throw reviewsError;
-
-      // 사용자 프로필 정보 가져오기
-      const userIds = reviewsData.map(review => review.user_id);
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .in('user_id', userIds);
-
-      if (profilesError) throw profilesError;
+      
+      console.log('Reviews data:', reviewsData);
 
       const reviewsWithData = reviewsData.map(review => ({
         ...review,
-        profiles: profilesData.find(profile => profile.user_id === review.user_id),
+        tool: {
+          ...review.tools,
+          logo_url: review.tools?.image_url
+        },
+        profile: review.profiles,
         likes: review.review_likes ? review.review_likes.length : 0,
         isLiked: review.review_likes ? review.review_likes.some(like => like.user_id === user?.id) : false,
-        mentionedTools: review.review_tool_mentions?.map(mention => mention.tools) || []
+        mentionedTools: review.review_tool_mentions?.map(mention => ({
+          ...mention.tools,
+          logo_url: mention.tools?.image_url
+        })) || []
       }));
 
+      console.log('Processed reviews:', reviewsWithData);
       setReviews(reviewsWithData);
       setError(null);
     } catch (error) {
@@ -139,7 +156,7 @@ export const ReviewSection = ({ toolId, className, isProfileView }) => {
           {
             tool_id: toolId,
             user_id: user.id,
-            content: processedContent || ''  // null 방지
+            content: processedContent || ''  
           }
         ])
         .select()
@@ -418,23 +435,33 @@ export const ReviewSection = ({ toolId, className, isProfileView }) => {
               isProfileView ? '' : 'last:border-b-0'
             }`}
           >
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex items-start justify-between mb-4">
               <div className="flex items-center space-x-3">
                 {isProfileView ? (
-                  <Link to={`/tools/${review.tool_id}`} className="text-blue-500 hover:underline">
-                    {tools.find(t => t.id === review.tool_id)?.title || '삭제된 도구'}
+                  <Link to={`/tool/${review.tool?.id}`} className="flex items-center hover:opacity-80">
+                    <img
+                      src={review.tool?.logo_url || '/placeholder-image.png'}
+                      alt={review.tool?.title}
+                      className="w-8 h-8 rounded-lg mr-2 object-cover"
+                      onError={(e) => {
+                        e.target.src = '/placeholder-image.png';
+                      }}
+                    />
+                    <span className="text-white font-medium">
+                      {review.tool?.title || '삭제된 도구'}
+                    </span>
                   </Link>
                 ) : (
                   <div className="flex items-center space-x-3">
                     <img
-                      src={review.profiles?.avatar_url || '/default-avatar.png'}
+                      src={review.profile?.avatar_url || '/default-avatar.png'}
                       alt="Profile"
                       className="w-8 h-8 rounded-full"
                     />
                     <div>
-                      <div className="font-medium">{review.profiles?.full_name || '알 수 없는 사용자'}</div>
+                      <div className="font-medium">{review.profile?.full_name || '알 수 없는 사용자'}</div>
                       <div className="text-sm text-gray-400">
-                        {review.profiles?.job_title || '직무 미설정'}
+                        {review.profile?.job_title || '직무 미설정'}
                       </div>
                     </div>
                   </div>

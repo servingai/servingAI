@@ -69,10 +69,22 @@ const Profile = () => {
         .from('reviews')
         .select(`
           *,
-          tools (
+          tools!reviews_tool_id_fkey (
             id,
             title,
-            image_url
+            image_url,
+            website_url
+          ),
+          review_likes (
+            user_id
+          ),
+          review_tool_mentions!inner (
+            tools!review_tool_mentions_tool_id_fkey (
+              id,
+              title,
+              image_url,
+              website_url
+            )
           )
         `)
         .eq('user_id', session.user.id)
@@ -85,7 +97,21 @@ const Profile = () => {
         return;
       }
 
-      setReviews(reviewsData);
+      const reviewsWithData = reviewsData.map(review => ({
+        ...review,
+        tool: {
+          ...review.tools,
+          logo_url: review.tools?.image_url
+        },
+        likes: review.review_likes ? review.review_likes.length : 0,
+        isLiked: review.review_likes ? review.review_likes.some(like => like.user_id === authUser?.id) : false,
+        mentionedTools: review.review_tool_mentions?.map(mention => ({
+          ...mention.tools,
+          logo_url: mention.tools?.image_url
+        })) || []
+      }));
+
+      setReviews(reviewsWithData);
     } catch (error) {
       console.error('Error loading user data:', error);
       setError('데이터를 불러오는 중 오류가 발생했습니다.');
@@ -518,7 +544,7 @@ const Profile = () => {
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={review.tool?.image_url || '/default-tool-image.png'}
+                      src={review.tool?.logo_url || '/default-tool-image.png'}
                       alt={review.tool?.title}
                       className="w-10 h-10 rounded-lg object-cover"
                     />
