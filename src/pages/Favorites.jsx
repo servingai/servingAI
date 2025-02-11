@@ -9,6 +9,7 @@ const Favorites = () => {
   const [favorites, setFavorites] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [imageError, setImageError] = useState({});
   const { user } = useAuth();
 
   useEffect(() => {
@@ -171,19 +172,18 @@ const Favorites = () => {
                 </button>
                 
                 <div className="w-full h-[180px] bg-white flex-shrink-0 p-6">
-                  {favorite.tools?.image_url ? (
+                  {!imageError[favorite.id] ? (
                     <div className="w-full h-full flex items-center justify-center">
                       <img
                         src={favorite.tools.image_url}
                         alt={favorite.tools?.title}
                         className="max-w-full max-h-full object-contain"
+                        onError={() => setImageError(prev => ({ ...prev, [favorite.id]: true }))}
                       />
                     </div>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-2xl font-bold text-gray-600">
-                        {favorite.tools?.title?.charAt(0)}
-                      </span>
+                      <div className="w-12 h-12 bg-[#3d4251] rounded-lg" />
                     </div>
                   )}
                 </div>
