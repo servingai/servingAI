@@ -5,14 +5,15 @@ import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 import { ko } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { jobCategories } from '../constants/jobCategories';
+import { useAuth } from '../contexts/AuthContext';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user: authUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [editingReview, setEditingReview] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -23,8 +24,12 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    fetchUserData();
-  }, []);
+    if (authUser) {
+      fetchUserData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [authUser]);
 
   useEffect(() => {
     if (profile) {
@@ -39,20 +44,11 @@ const Profile = () => {
 
   const fetchUserData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.log('No user found');
-        return;
-      }
-      
-      console.log('Current user:', user);
-      setUser(user);
-
       // 프로필 정보 가져오기
       const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .single();
       
       if (profileError) {
@@ -77,7 +73,7 @@ const Profile = () => {
             price_type
           )
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .order('created_at', { ascending: false });
 
       if (reviewsError) {
@@ -98,10 +94,11 @@ const Profile = () => {
 
       console.log('Processed reviews data:', processedReviews);
       setReviews(processedReviews || []);
-
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error in fetchUserData:', error);
       setError('데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -172,7 +169,7 @@ const Profile = () => {
           years_of_experience: parseInt(profileForm.years_of_experience) || null,
           organization: profileForm.organization
         })
-        .eq('user_id', user.id);
+        .eq('user_id', authUser.id);
 
       if (updateError) throw updateError;
 
@@ -180,7 +177,7 @@ const Profile = () => {
       const { data: updatedProfile } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .single();
 
       setProfile(updatedProfile);
@@ -217,7 +214,8 @@ const Profile = () => {
     }
   };
 
-  if (!user) {
+  // 로그인하지 않은 경우 로그인 화면 표시
+  if (!authUser) {
     return (
       <div className="pt-[60px] pb-[80px] px-4">
         <div className="h-[calc(100vh-140px)] flex flex-col items-center justify-center">
