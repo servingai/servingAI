@@ -134,7 +134,7 @@ const Header = ({ onSearch }) => {
                 alt="Google"
                 className="w-4 h-4"
               />
-              회원가입
+              로그인
             </button>
           )}
         </nav>

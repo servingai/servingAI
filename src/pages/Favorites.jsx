@@ -119,16 +119,14 @@ const Favorites = () => {
 
   if (!user) {
     return (
-      <div className="pt-[60px] pb-[80px] px-4">
-        <div className="h-[calc(100vh-140px)] flex flex-col items-center justify-center">
-          <p className="text-lg text-white mb-4">회원가입 후 더 많은 기능을 이용해보세요!</p>
-          <button
-            onClick={handleGoogleLogin}
-            className="px-6 py-2.5 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563eb] transition-colors"
-          >
-            회원가입하기
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <h2 className="text-lg text-gray-200 mb-4">로그인 후 더 많은 기능을 이용해보세요!</h2>
+        <button
+          onClick={() => navigate('/auth')}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+        >
+          로그인하기
+        </button>
       </div>
     );
   }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
 import BottomNavigation from './components/layout/BottomNavigation';
@@ -7,7 +7,6 @@ import Home from './pages/Home';
 import ToolDetail from './pages/ToolDetail';
 import Profile from './pages/Profile';
 import Favorites from './pages/Favorites';
-import { OnboardingForm } from './components/auth/OnboardingForm';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -25,7 +24,7 @@ function AppContent() {
           <Route path="/tool/:id" element={<ToolDetail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/favorites" element={<Favorites />} />
-          <Route path="/onboarding" element={<OnboardingForm />} />
+          <Route path="/onboarding" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <BottomNavigation />

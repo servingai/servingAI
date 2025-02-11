@@ -26,12 +26,73 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    if (authUser) {
-      fetchUserData();
-    } else {
+    const loadData = async () => {
+      if (!authUser?.id) {
+        setIsLoading(false);
+        return;
+      }
+      await fetchUserData();
+    };
+    
+    loadData();
+  }, [authUser]);
+
+  const fetchUserData = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      // 프로필 정보 가져오기
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Error fetching profile data:', profileError);
+        setError('프로필 데이터를 불러오는 중 오류가 발생했습니다.');
+        setIsLoading(false);
+        return;
+      }
+
+      setProfile(profileData);
+
+      // 작성한 리뷰 가져오기
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('reviews')
+        .select(`
+          *,
+          tools (
+            id,
+            title,
+            image_url
+          )
+        `)
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (reviewsError) {
+        console.error('Error fetching reviews:', reviewsError);
+        setError('리뷰 데이터를 불러오는 중 오류가 발생했습니다.');
+        setIsLoading(false);
+        return;
+      }
+
+      setReviews(reviewsData);
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      setError('데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
       setIsLoading(false);
     }
-  }, [authUser]);
+  };
 
   useEffect(() => {
     if (profile) {
@@ -43,73 +104,6 @@ const Profile = () => {
       });
     }
   }, [profile]);
-
-  const fetchUserData = async () => {
-    try {
-      // 프로필 정보 가져오기
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', authUser.id)
-        .single();
-      
-      if (profileError) {
-        console.error('Error fetching profile data:', profileError);
-        setError('프로필 데이터를 불러오는 중 오류가 발생했습니다.');
-        return;
-      }
-
-      console.log('Profile data:', profileData);
-      setProfile(profileData);
-
-      // 작성한 리뷰 가져오기
-      const { data: reviewsData, error: reviewsError } = await supabase
-        .from('reviews')
-        .select(`
-          *,
-          review_likes (
-            user_id
-          ),
-          review_tool_mentions (
-            tools (
-              id,
-              title
-            )
-          ),
-          tools (
-            id,
-            title,
-            image_url
-          )
-        `)
-        .eq('user_id', authUser.id)
-        .order('created_at', { ascending: false });
-
-      if (reviewsError) {
-        console.error('Error fetching reviews:', reviewsError);
-        return;
-      }
-
-      console.log('Raw reviews data:', reviewsData);
-
-      // 이미지 URL 유효성 검사
-      const processedReviews = reviewsData?.map(review => ({
-        ...review,
-        tool: review.tools,
-        likes: review.review_likes ? review.review_likes.length : 0,
-        isLiked: review.review_likes ? review.review_likes.some(like => like.user_id === authUser?.id) : false,
-        mentionedTools: review.review_tool_mentions?.map(mention => mention.tools) || []
-      }));
-
-      console.log('Processed reviews data:', processedReviews);
-      setReviews(processedReviews || []);
-    } catch (error) {
-      console.error('Error in fetchUserData:', error);
-      setError('데이터를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // 리뷰 수정
   const handleUpdateReview = async (e) => {
@@ -399,19 +393,43 @@ const Profile = () => {
     }
   };
 
+  const renderProfileImage = () => {
+    if (!profile) return null;
+
+    if (profile.avatar_url) {
+      return (
+        <img
+          src={profile.avatar_url}
+          alt={profile.full_name}
+          className="w-24 h-24 rounded-full object-cover border-4 border-gray-700"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=random`;
+          }}
+        />
+      );
+    }
+
+    return (
+      <img
+        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=random`}
+        alt={profile.full_name}
+        className="w-24 h-24 rounded-full object-cover border-4 border-gray-700"
+      />
+    );
+  };
+
   // 로그인하지 않은 경우 로그인 화면 표시
   if (!authUser) {
     return (
-      <div className="pt-[60px] pb-[80px] px-4">
-        <div className="h-[calc(100vh-140px)] flex flex-col items-center justify-center">
-          <p className="text-lg text-white mb-4">회원가입 후 더 많은 기능을 이용해보세요!</p>
-          <button
-            onClick={handleGoogleLogin}
-            className="px-6 py-2.5 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563eb] transition-colors"
-          >
-            회원가입하기
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <h2 className="text-lg text-gray-200 mb-4">로그인 후 더 많은 기능을 이용해보세요!</h2>
+        <button
+          onClick={() => navigate('/auth')}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+        >
+          로그인하기
+        </button>
       </div>
     );
   }
@@ -426,17 +444,7 @@ const Profile = () => {
             <div className="flex items-center gap-6">
               {/* 프로필 이미지 */}
               <div className="flex items-center justify-center">
-                <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
-                  {profile.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt="프로필 이미지"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <UserCircleIcon className="w-full h-full text-gray-400" />
-                  )}
-                </div>
+                {renderProfileImage()}
               </div>
               {/* 사용자 정보 */}
               <div className="flex flex-col justify-center">
