@@ -56,10 +56,16 @@ const Header = ({ onSearch }) => {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error logging out:', error.message);
+        return;
+      }
       setShowUserMenu(false);
-      // 홈으로 리디렉션하고 페이지 새로고침
-      window.location.href = '/';
+      // 로그아웃이 성공적으로 완료된 후에 리디렉션
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
     } catch (error) {
       console.error('Error logging out:', error.message);
     }
