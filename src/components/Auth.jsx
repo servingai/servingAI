@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { supabase } from '../config/supabase';
+import { useNavigate } from 'react-router-dom';
 
 const Auth = ({ onClose }) => {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,15 +20,42 @@ const Auth = ({ onClose }) => {
           password,
         });
         if (error) throw error;
+        onClose();
       } else {
-        const { error } = await supabase.auth.signUp({
+        // 회원가입
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         });
-        if (error) throw error;
+        if (signUpError) throw signUpError;
+
+        // 기본 프로필 생성
+        if (authData?.user) {
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .insert([
+              {
+                user_id: authData.user.id,
+                full_name: email.split('@')[0], // 임시로 이메일의 아이디 부분을 이름으로 사용
+                avatar_url: null,
+                job_category: '',
+                job_title: '',
+                years_of_experience: 0,
+                organization: ''
+              }
+            ]);
+          
+          if (profileError) {
+            console.error('프로필 생성 실패:', profileError);
+            throw new Error('프로필 생성에 실패했습니다. 관리자에게 문의해주세요.');
+          }
+        }
+
         alert('가입 확인 이메일을 확인해주세요.');
+        onClose();
+        // 온보딩 페이지로 리다이렉트
+        navigate('/onboarding');
       }
-      onClose();
     } catch (error) {
       alert(error.message);
     } finally {
