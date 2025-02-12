@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
 
@@ -7,7 +7,6 @@ const Header = ({ onSearch }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { user, signOut } = useAuth();
   const dropdownRef = useRef(null);
 
@@ -65,7 +64,6 @@ const Header = ({ onSearch }) => {
 
   const handleLogoClick = () => {
     // 홈으로 이동하면서 검색 파라미터 초기화
-    setSearchParams('');
     navigate('/');
   };
 

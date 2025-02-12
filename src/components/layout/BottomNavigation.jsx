@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { HomeIcon, HeartIcon, UserIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { HomeIcon as HomeSolid, HeartIcon as HeartSolid, UserIcon as UserSolid, SparklesIcon as SparklesSolid } from '@heroicons/react/24/solid';
 
 const BottomNavigation = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const [showComingSoon, setShowComingSoon] = useState(false);
 
   const handleHomeClick = () => {
-    // 현재 홈 페이지에 있을 경우에만 필터 초기화
-    if (location.pathname === '/') {
-      setSearchParams('');
-    }
     navigate('/');
   };
 

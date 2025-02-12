@@ -7,7 +7,6 @@ import { Link } from 'react-router-dom';
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { jobCategories } from '../../constants/jobCategories';
 
 export const ReviewSection = ({ toolId, className, isProfileView }) => {
   const { user } = useAuth();
@@ -112,8 +111,10 @@ export const ReviewSection = ({ toolId, className, isProfileView }) => {
   };
 
   useEffect(() => {
-    fetchReviews();
-  }, [toolId]);
+    if (toolId) {
+      fetchReviews();
+    }
+  }, [toolId, fetchReviews]);
 
   // 리뷰 내용에서 @mentions 처리
   const processReviewContent = (content) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../config/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -7,16 +7,7 @@ export const useFavorite = (toolId) => {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (toolId && user) {
-      checkFavoriteStatus();
-    } else {
-      setIsLoading(false);
-      setIsFavorited(false);
-    }
-  }, [toolId, user]);
-
-  const checkFavoriteStatus = async () => {
+  const checkFavoriteStatus = useCallback(async () => {
     try {
       console.log('Checking favorite status for tool:', toolId);
       const { data, error } = await supabase
@@ -38,7 +29,16 @@ export const useFavorite = (toolId) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toolId, user]);
+
+  useEffect(() => {
+    if (toolId && user) {
+      checkFavoriteStatus();
+    } else {
+      setIsLoading(false);
+      setIsFavorited(false);
+    }
+  }, [toolId, user, checkFavoriteStatus]);
 
   const toggleFavorite = async () => {
     if (!user) {

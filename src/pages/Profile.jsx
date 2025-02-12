@@ -78,8 +78,8 @@ const Profile = () => {
           review_likes (
             user_id
           ),
-          review_tool_mentions!inner (
-            tools!review_tool_mentions_tool_id_fkey (
+          review_tool_mentions (
+            tools (
               id,
               title,
               image_url,
@@ -97,20 +97,21 @@ const Profile = () => {
         return;
       }
 
-      const reviewsWithData = reviewsData.map(review => ({
+      const reviewsWithData = reviewsData?.map(review => ({
         ...review,
         tool: {
           ...review.tools,
           logo_url: review.tools?.image_url
         },
-        likes: review.review_likes ? review.review_likes.length : 0,
-        isLiked: review.review_likes ? review.review_likes.some(like => like.user_id === authUser?.id) : false,
+        likes: review.review_likes?.length || 0,
+        isLiked: review.review_likes?.some(like => like.user_id === authUser?.id) || false,
         mentionedTools: review.review_tool_mentions?.map(mention => ({
           ...mention.tools,
           logo_url: mention.tools?.image_url
         })) || []
-      }));
+      })) || [];
 
+      console.log('Processed reviews:', reviewsWithData);
       setReviews(reviewsWithData);
     } catch (error) {
       console.error('Error loading user data:', error);
