@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { checkAndRedirectProfile } from '../utils/profileUtils';
 import ToolCard from '../components/ToolCard';
 import { supabase } from '../config/supabase';
 import { PlusIcon, XMarkIcon, ChatBubbleLeftIcon, PaperAirplaneIcon, ChevronDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
@@ -18,6 +20,8 @@ const Home = () => {
   const priceFilterRef = useRef(null);
   const fabMenuRef = useRef(null);
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -37,6 +41,17 @@ const Home = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (authUser?.id) {
+        await checkAndRedirectProfile(authUser.id, navigate, window.location.pathname);
+      }
+      setIsLoading(false);
+    };
+
+    checkProfile();
+  }, [authUser, navigate]);
 
   const handleFabClick = () => {
     setShowFabMenu(!showFabMenu);

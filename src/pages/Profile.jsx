@@ -8,6 +8,7 @@ import { jobCategories } from '../constants/jobCategories';
 import { useAuth } from '../contexts/AuthContext';
 import { HeartIcon as HeartOutline, HeartIcon as HeartSolid, UserCircleIcon, PencilSquareIcon, TrashIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { OnboardingForm } from '../components/auth/OnboardingForm';
+import { checkAndRedirectProfile } from '../utils/profileUtils';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -48,27 +49,28 @@ const Profile = () => {
         throw profileError;
       }
 
-      if (profileData) {
-        console.log('프로필 데이터:', profileData);
-        // 항상 프로필 데이터 설정
-        setProfile(profileData);
-        setProfileForm({
-          job_category: profileData.job_category || '',
-          job_title: profileData.job_title || '',
-          years_of_experience: profileData.years_of_experience || '',
-          organization: profileData.organization || ''
-        });
+      // 프로필이 없거나 필수 정보가 없는 경우 온보딩 페이지로 리다이렉트
+      if (!profileData || !profileData.job_category || !profileData.job_title) {
+        console.log('필수 프로필 정보 누락, 온보딩 페이지로 이동');
+        navigate('/onboarding', { replace: true });
+        return;
+      }
 
-        // 필수 정보가 없는 경우에만 온보딩 표시
-        if (!profileData.job_category || !profileData.job_title) {
-          console.log('필수 프로필 정보 누락, 온보딩 필요');
-          setShowOnboarding(true);
-        } else {
-          setShowOnboarding(false);
-        }
-      } else {
-        console.log('프로필 없음, 온보딩 필요');
+      console.log('프로필 데이터:', profileData);
+      setProfile(profileData);
+      setProfileForm({
+        job_category: profileData.job_category || '',
+        job_title: profileData.job_title || '',
+        years_of_experience: profileData.years_of_experience || '',
+        organization: profileData.organization || ''
+      });
+
+      // 필수 정보가 없는 경우에만 온보딩 표시
+      if (!profileData.job_category || !profileData.job_title) {
+        console.log('필수 프로필 정보 누락, 온보딩 필요');
         setShowOnboarding(true);
+      } else {
+        setShowOnboarding(false);
       }
 
       // 리뷰와 도구 정보를 한 번에 조회
@@ -129,12 +131,15 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (authUser?.id) {
-      fetchUserData();
-    } else {
+    const checkProfile = async () => {
+      if (authUser?.id) {
+        await checkAndRedirectProfile(authUser.id, navigate, window.location.pathname);
+      }
       setIsLoading(false);
-    }
-  }, [authUser]);
+    };
+
+    checkProfile();
+  }, [authUser, navigate]);
 
   // 리뷰 수정
   const handleUpdateReview = async (e) => {

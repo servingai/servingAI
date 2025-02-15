@@ -3,62 +3,72 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
+import { checkAndRedirectProfile } from '../utils/profileUtils';
 
 const Favorites = () => {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [favorites, setFavorites] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [imageError, setImageError] = useState({});
-  const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      fetchFavorites();
-    } else {
+    const checkProfile = async () => {
+      if (authUser?.id) {
+        await checkAndRedirectProfile(authUser.id, navigate, window.location.pathname);
+      }
       setIsLoading(false);
-    }
-  }, [user]);
+    };
 
-  const fetchFavorites = async () => {
-    try {
-      const { data: favoritesData, error: favoritesError } = await supabase
-        .from('favorites')
-        .select(`
-          *,
-          tools!inner (
-            id,
-            title,
-            description,
-            image_url,
-            price_type,
-            tool_categories!inner (
-              categories!inner (
-                name
+    checkProfile();
+  }, [authUser, navigate]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!authUser?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      // 찜 목록 조회
+      try {
+        const { data, error } = await supabase
+          .from('favorites')
+          .select(`
+            *,
+            tools!inner (
+              id,
+              title,
+              description,
+              image_url,
+              price_type,
+              tool_categories!inner (
+                categories!inner (
+                  name
+                )
               )
             )
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+          `)
+          .eq('user_id', authUser.id)
+          .order('created_at', { ascending: false });
 
-      if (favoritesError) throw favoritesError;
+        if (error) throw error;
+        setFavorites(data || []);
+      } catch (error) {
+        console.error('Error fetching favorites:', error);
+      }
+    };
 
-      setFavorites(favoritesData || []);
-    } catch (error) {
-      console.error('Error fetching favorites:', error);
-      setError('찜한 도구를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    fetchData();
+  }, [authUser]);
 
   const handleUnfavorite = async (toolId) => {
     try {
       const { error } = await supabase
         .from('favorites')
         .delete()
-        .eq('user_id', user.id)
+        .eq('user_id', authUser.id)
         .eq('tool_id', toolId);
 
       if (error) throw error;
@@ -106,7 +116,12 @@ const Favorites = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: `${window.location.origin}/auth-callback`,
+          scopes: 'email profile',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
       if (error) throw error;
@@ -115,7 +130,7 @@ const Favorites = () => {
     }
   };
 
-  if (!user) {
+  if (!authUser) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <h2 className="text-lg text-gray-200 mb-4">로그인 후 더 많은 기능을 이용해보세요!</h2>
