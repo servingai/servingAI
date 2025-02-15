@@ -8,6 +8,7 @@ import ToolDetail from './pages/ToolDetail';
 import Profile from './pages/Profile';
 import Favorites from './pages/Favorites';
 import Onboarding from './pages/Onboarding';
+import AuthCallback from './pages/AuthCallback';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ function AppContent() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/auth-callback" element={<AuthCallback />} />
         </Routes>
       </main>
       <BottomNavigation />
