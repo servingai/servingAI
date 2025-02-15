@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { jobCategories } from '../constants/jobCategories';
 import { useAuth } from '../contexts/AuthContext';
 import { HeartIcon as HeartOutline, HeartIcon as HeartSolid, UserCircleIcon, PencilSquareIcon, TrashIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { OnboardingForm } from '../components/auth/OnboardingForm';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -24,113 +25,116 @@ const Profile = () => {
     years_of_experience: '',
     organization: ''
   });
-
-  useEffect(() => {
-    const loadData = async () => {
-      if (!authUser?.id) {
-        setIsLoading(false);
-        return;
-      }
-      await fetchUserData();
-    };
-    
-    loadData();
-  }, [authUser]);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const fetchUserData = async () => {
-    setIsLoading(true);
-    setError(null);
-    
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) {
-        setIsLoading(false);
+      if (!authUser?.id) {
+        console.log('인증된 사용자 없음');
         return;
       }
 
-      // 프로필 정보 가져오기
+      console.log('사용자 데이터 조회 시작:', authUser.id);
+
+      // 프로필 데이터 조회
       const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('user_id', authUser.id)
         .single();
-      
-      if (profileError) {
-        console.error('Error fetching profile data:', profileError);
-        setError('프로필 데이터를 불러오는 중 오류가 발생했습니다.');
-        setIsLoading(false);
-        return;
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('프로필 조회 오류:', profileError);
+        throw profileError;
       }
 
-      setProfile(profileData);
+      if (profileData) {
+        console.log('프로필 데이터:', profileData);
+        // 항상 프로필 데이터 설정
+        setProfile(profileData);
+        setProfileForm({
+          job_category: profileData.job_category || '',
+          job_title: profileData.job_title || '',
+          years_of_experience: profileData.years_of_experience || '',
+          organization: profileData.organization || ''
+        });
 
-      // 작성한 리뷰 가져오기
+        // 필수 정보가 없는 경우에만 온보딩 표시
+        if (!profileData.job_category || !profileData.job_title) {
+          console.log('필수 프로필 정보 누락, 온보딩 필요');
+          setShowOnboarding(true);
+        } else {
+          setShowOnboarding(false);
+        }
+      } else {
+        console.log('프로필 없음, 온보딩 필요');
+        setShowOnboarding(true);
+      }
+
+      // 리뷰와 도구 정보를 한 번에 조회
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select(`
           *,
-          tools!reviews_tool_id_fkey (
-            id,
-            title,
-            image_url,
-            website_url
-          ),
+          tool_id,
           review_likes (
+            id,
             user_id
-          ),
-          review_tool_mentions (
-            tools (
-              id,
-              title,
-              image_url,
-              website_url
-            )
           )
         `)
-        .eq('user_id', session.user.id)
+        .eq('user_id', authUser.id)
         .order('created_at', { ascending: false });
 
       if (reviewsError) {
-        console.error('Error fetching reviews:', reviewsError);
-        setError('리뷰 데이터를 불러오는 중 오류가 발생했습니다.');
-        setIsLoading(false);
-        return;
+        console.error('리뷰 데이터 조회 오류:', reviewsError);
+        throw reviewsError;
       }
 
-      const reviewsWithData = reviewsData?.map(review => ({
-        ...review,
-        tool: {
-          ...review.tools,
-          logo_url: review.tools?.image_url
-        },
-        likes: review.review_likes?.length || 0,
-        isLiked: review.review_likes?.some(like => like.user_id === authUser?.id) || false,
-        mentionedTools: review.review_tool_mentions?.map(mention => ({
-          ...mention.tools,
-          logo_url: mention.tools?.image_url
-        })) || []
-      })) || [];
+      console.log('조회된 리뷰 데이터:', reviewsData);
 
-      console.log('Processed reviews:', reviewsWithData);
-      setReviews(reviewsWithData);
+      if (reviewsData && reviewsData.length > 0) {
+        // 도구 정보 조회
+        const toolIds = reviewsData.map(review => review.tool_id);
+        const { data: toolsData, error: toolsError } = await supabase
+          .from('tools')
+          .select('id, title, image_url')
+          .in('id', toolIds);
+
+        if (toolsError) {
+          console.error('도구 데이터 조회 오류:', toolsError);
+          throw toolsError;
+        }
+
+        // 리뷰 데이터 변환 - 도구 정보와 좋아요 정보 포함
+        const processedReviews = reviewsData.map(review => ({
+          ...review,
+          tools: toolsData.find(tool => tool.id === review.tool_id),
+          isLiked: review.review_likes?.some(like => like.user_id === authUser.id),
+          likes: review.review_likes?.length || 0
+        }));
+
+        console.log('변환된 리뷰 데이터:', processedReviews);
+        setReviews(processedReviews);
+      } else {
+        console.log('리뷰 데이터 없음');
+        setReviews([]);
+      }
+
     } catch (error) {
-      console.error('Error loading user data:', error);
-      setError('데이터를 불러오는 중 오류가 발생했습니다.');
+      console.error('데이터 조회 오류:', error);
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (profile) {
-      setProfileForm({
-        job_category: profile.job_category || '',
-        job_title: profile.job_title || '',
-        years_of_experience: profile.years_of_experience || '',
-        organization: profile.organization || ''
-      });
+    if (authUser?.id) {
+      fetchUserData();
+    } else {
+      setIsLoading(false);
     }
-  }, [profile]);
+  }, [authUser]);
 
   // 리뷰 수정
   const handleUpdateReview = async (e) => {
@@ -335,8 +339,15 @@ const Profile = () => {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
+
+    // 필수 필드 검증
+    if (!profileForm.job_category || !profileForm.job_title) {
+      setError('직군과 직무는 필수 입력 항목입니다.');
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const { error: updateError } = await supabase
@@ -444,6 +455,16 @@ const Profile = () => {
     );
   };
 
+  const handleOnboardingClose = async () => {
+    try {
+      await fetchUserData();
+      setShowOnboarding(false);
+    } catch (error) {
+      console.error('온보딩 완료 후 데이터 갱신 오류:', error);
+      setError('프로필 정보를 갱신하는 중 오류가 발생했습니다.');
+    }
+  };
+
   // 로그인하지 않은 경우 로그인 화면 표시
   if (!authUser) {
     return (
@@ -532,118 +553,128 @@ const Profile = () => {
         </div>
       )}
 
-      {/* 작성한 리뷰 */}
-      <div className="bg-[#1e2128] rounded-xl p-6 border border-[#2b2f38]">
-        <h2 className="text-xl font-bold text-white mb-4">작성한 리뷰</h2>
-        {reviews?.length > 0 ? (
-          <div className="space-y-4">
-            {reviews.map((review) => (
-              <div
-                key={review.id}
-                className="p-4 rounded-lg border border-[#2b2f38] hover:border-gray-600 transition-colors"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={review.tool?.logo_url || '/default-tool-image.png'}
-                      alt={review.tool?.title}
-                      className="w-10 h-10 rounded-lg object-cover"
-                    />
-                    <Link
-                      to={`/tool/${review.tool?.id}`}
-                      className="text-blue-500 hover:underline font-medium"
-                    >
-                      {review.tool?.title || '삭제된 도구'}
-                    </Link>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => handleLikeToggle(review.id)}
-                      className="flex items-center space-x-1 text-sm"
-                    >
-                      {review.isLiked ? (
-                        <HeartSolid className="w-5 h-5 text-red-500" />
-                      ) : (
-                        <HeartOutline className="w-5 h-5 text-gray-400" />
+      {/* 온보딩 폼 */}
+      {showOnboarding && (
+        <OnboardingForm
+          onClose={handleOnboardingClose}
+          currentUser={authUser}
+        />
+      )}
+
+      {/* 작성한 리뷰 섹션은 온보딩 폼이 표시되지 않을 때만 보여줌 */}
+      {!showOnboarding && (
+        <div className="bg-[#1e2128] rounded-xl p-6 border border-[#2b2f38]">
+          <h2 className="text-xl font-bold text-white mb-4">작성한 리뷰</h2>
+          {reviews?.length > 0 ? (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="p-4 rounded-lg border border-[#2b2f38] hover:border-gray-600 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src={review.tools?.image_url || '/default-tool-image.png'}
+                        alt={review.tools?.title}
+                        className="w-10 h-10 rounded-lg object-cover"
+                      />
+                      <Link
+                        to={`/tool/${review.tools?.id}`}
+                        className="text-blue-500 hover:underline font-medium"
+                      >
+                        {review.tools?.title || '삭제된 도구'}
+                      </Link>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleLikeToggle(review.id)}
+                        className="flex items-center space-x-1 text-sm"
+                      >
+                        {review.isLiked ? (
+                          <HeartSolid className="w-5 h-5 text-red-500" />
+                        ) : (
+                          <HeartOutline className="w-5 h-5 text-gray-400" />
+                        )}
+                        <span className="text-gray-400">{review.likes}</span>
+                      </button>
+                      {authUser?.id === review.user_id && (
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditingReview(review);
+                              setEditedReviewContent(review.content);
+                            }}
+                            className="text-gray-400 hover:text-white transition-colors p-1"
+                            title="리뷰 수정"
+                          >
+                            <PencilSquareIcon className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteReview(review.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                            title="리뷰 삭제"
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        </div>
                       )}
-                      <span className="text-gray-400">{review.likes}</span>
-                    </button>
-                    {authUser?.id === review.user_id && (
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => {
-                            setEditingReview(review);
-                            setEditedReviewContent(review.content);
-                          }}
-                          className="text-gray-400 hover:text-white transition-colors p-1"
-                          title="리뷰 수정"
-                        >
-                          <PencilSquareIcon className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteReview(review.id)}
-                          className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                          title="리뷰 삭제"
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
-                      </div>
-                    )}
+                    </div>
                   </div>
+                  {editingReview?.id === review.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editedReviewContent}
+                        onChange={(e) => setEditedReviewContent(e.target.value)}
+                        placeholder="AI도구 사용팁과 리뷰를 남겨보세요"
+                        className="w-full px-4 py-3 bg-[#1e2128] border border-[#2b2f38] rounded-xl text-sm focus:outline-none focus:border-[#3d4251] hover:border-[#3d4251] transition-colors"
+                        rows="3"
+                      />
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs text-gray-400">
+                          다른 도구를 태그하려면 '@'를 입력하세요
+                        </p>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setEditingReview(null)}
+                            className="px-4 py-2 rounded-xl text-sm font-medium transition-colors bg-gray-600 hover:bg-gray-700"
+                          >
+                            취소
+                          </button>
+                          <button
+                            onClick={() => handleEditReview(review.id, editedReviewContent)}
+                            className="px-4 py-2 rounded-xl text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-700"
+                          >
+                            수정하기
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-sm text-gray-200 whitespace-pre-wrap">
+                        {renderReviewContent(review.content)}
+                      </div>
+                      <div className="mt-2 text-sm text-gray-400">
+                        {formatDate(review.created_at)}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {editingReview?.id === review.id ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={editedReviewContent}
-                      onChange={(e) => setEditedReviewContent(e.target.value)}
-                      placeholder="AI도구 사용팁과 리뷰를 남겨보세요"
-                      className="w-full px-4 py-3 bg-[#1e2128] border border-[#2b2f38] rounded-xl text-sm focus:outline-none focus:border-[#3d4251] hover:border-[#3d4251] transition-colors"
-                      rows="3"
-                    />
-                    <div className="flex justify-between items-center">
-                      <p className="text-xs text-gray-400">
-                        다른 도구를 태그하려면 '@'를 입력하세요
-                      </p>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => setEditingReview(null)}
-                          className="px-4 py-2 rounded-xl text-sm font-medium transition-colors bg-gray-600 hover:bg-gray-700"
-                        >
-                          취소
-                        </button>
-                        <button
-                          onClick={() => handleEditReview(review.id, editedReviewContent)}
-                          className="px-4 py-2 rounded-xl text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-700"
-                        >
-                          수정하기
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="text-sm text-gray-200 whitespace-pre-wrap">
-                      {renderReviewContent(review.content)}
-                    </div>
-                    <div className="mt-2 text-sm text-gray-400">
-                      {formatDate(review.created_at)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-400">아직 작성한 리뷰가 없습니다.</p>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400">아직 작성한 리뷰가 없습니다.</p>
+          )}
+        </div>
+      )}
 
       {/* 리뷰 수정 폼 */}
       {editingReview && (
         <form onSubmit={handleUpdateReview} className="mb-6">
           <div className="flex flex-col space-y-2">
             <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-              <span>{editingReview.tool.title}</span>
+              <span>{editingReview.tools?.title}</span>
               <span>•</span>
               <span>{formatDate(editingReview.created_at)}</span>
             </div>
@@ -682,15 +713,21 @@ const Profile = () => {
           <div className="bg-[#1e2128] rounded-xl p-6 max-w-md w-full mx-4 border border-[#2b2f38]">
             <h2 className="text-xl font-bold text-white mb-6">프로필 수정</h2>
             <form onSubmit={handleUpdateProfile}>
+              {error && (
+                <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-lg mb-4">
+                  <p className="text-red-400 text-sm">{error}</p>
+                </div>
+              )}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">
-                    직군
+                    직군<span className="text-red-500 ml-1">*</span>
                   </label>
                   <select
                     value={profileForm.job_category}
                     onChange={(e) => setProfileForm({...profileForm, job_category: e.target.value})}
                     className="w-full px-4 py-2 bg-[#2b2f38] border border-[#3d4251] rounded-lg text-white text-sm focus:outline-none focus:border-[#4d5261]"
+                    required
                   >
                     <option value="">선택하세요</option>
                     {jobCategories.map((category) => (
@@ -702,7 +739,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">
-                    직무
+                    직무<span className="text-red-500 ml-1">*</span>
                   </label>
                   <input
                     type="text"
@@ -710,6 +747,7 @@ const Profile = () => {
                     onChange={(e) => setProfileForm({...profileForm, job_title: e.target.value})}
                     className="w-full px-4 py-2 bg-[#2b2f38] border border-[#3d4251] rounded-lg text-white text-sm focus:outline-none focus:border-[#4d5261]"
                     placeholder="예: UI/UX 디자이너"
+                    required
                   />
                 </div>
                 <div>
@@ -748,9 +786,9 @@ const Profile = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !profileForm.job_category || !profileForm.job_title}
                   className={`px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors ${
-                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                    (isLoading || !profileForm.job_category || !profileForm.job_title) ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
                   {isLoading ? '저장 중...' : '저장'}

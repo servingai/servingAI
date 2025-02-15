@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import ToolDetail from './pages/ToolDetail';
 import Profile from './pages/Profile';
 import Favorites from './pages/Favorites';
+import Onboarding from './pages/Onboarding';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ function AppContent() {
           <Route path="/tool/:id" element={<ToolDetail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/favorites" element={<Favorites />} />
-          <Route path="/onboarding" element={<Navigate to="/" replace />} />
+          <Route path="/onboarding" element={<Onboarding />} />
         </Routes>
       </main>
       <BottomNavigation />
