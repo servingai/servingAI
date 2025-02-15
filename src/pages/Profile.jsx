@@ -131,14 +131,29 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    const checkProfile = async () => {
-      if (authUser?.id) {
-        await checkAndRedirectProfile(authUser.id, navigate, window.location.pathname);
+    const checkProfileAndFetchData = async () => {
+      if (!authUser?.id) {
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
+
+      try {
+        // 프로필 체크
+        const isProfileComplete = await checkAndRedirectProfile(authUser.id, navigate, window.location.pathname);
+        
+        // 프로필 체크가 완료되고 온보딩이 필요하지 않은 경우에만 데이터 로드
+        if (isProfileComplete) {
+          await fetchUserData();
+        }
+      } catch (error) {
+        console.error('프로필 체크 및 데이터 로드 오류:', error);
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    checkProfile();
+    checkProfileAndFetchData();
   }, [authUser, navigate]);
 
   // 리뷰 수정
