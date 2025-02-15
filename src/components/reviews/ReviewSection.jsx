@@ -524,7 +524,7 @@ export const ReviewSection = ({ toolId, className, isProfileView }) => {
                 />
                 <div className="flex justify-between items-center">
                   <p className="text-xs text-gray-400">
-                    다른 도구를 태그하려면 '@'를 입력하세요
+                
                   </p>
                   <div className="flex space-x-2">
                     <button
@@ -537,7 +537,7 @@ export const ReviewSection = ({ toolId, className, isProfileView }) => {
                       onClick={() => handleEditReview(review.id, editedReviewContent)}
                       className="px-4 py-2 rounded-xl text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-700"
                     >
-                      수정하기
+                      수정
                     </button>
                   </div>
                 </div>
