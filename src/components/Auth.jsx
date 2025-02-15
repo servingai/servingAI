@@ -5,9 +5,6 @@ import { OnboardingForm } from './auth/OnboardingForm';
 
 export const Auth = () => {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -17,14 +14,18 @@ export const Auth = () => {
   // URL 파라미터 체크
   useEffect(() => {
     const checkOnboardingStatus = async () => {
+      // 현재 경로가 /onboarding인지 확인
+      const isOnboardingPath = window.location.pathname === '/onboarding';
       const params = new URLSearchParams(window.location.search);
-      const needsOnboarding = params.get('onboarding') === 'true';
+      const needsOnboarding = params.get('onboarding') === 'true' || isOnboardingPath;
       
       if (needsOnboarding) {
-        console.log('URL 파라미터에서 온보딩 필요 감지');
+        console.log('온보딩 필요 감지');
         // URL에서 onboarding 파라미터 제거
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
+        if (!isOnboardingPath) {
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }
         
         // 현재 세션 확인
         const { data: { session } } = await supabase.auth.getSession();
@@ -50,7 +51,7 @@ export const Auth = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}?onboarding=true`,
+          redirectTo: `${window.location.origin}/onboarding`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -224,87 +225,6 @@ export const Auth = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      if (isLogin) {
-        console.log('로그인 시도:', email);
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) throw error;
-        console.log('로그인 성공:', data);
-        
-        // 로그인 성공 시 홈으로 리다이렉트
-        navigate('/', { replace: true });
-      } else {
-        console.log('회원가입 시도:', email);
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: email.split('@')[0],
-            },
-          },
-        });
-
-        if (error) throw error;
-        console.log('회원가입 성공:', data);
-
-        if (data?.user) {
-          setCurrentUser(data.user);
-          console.log('프로필 생성 시도:', data.user.id);
-          
-          // 회원가입 직후 프로필 생성
-          const { data: newProfile, error: profileError } = await supabase
-            .from('user_profiles')
-            .insert([
-              {
-                user_id: data.user.id,
-                full_name: data.user.user_metadata?.full_name || email.split('@')[0],
-                avatar_url: data.user.user_metadata?.avatar_url || null,
-                job_category: '',
-                job_title: '',
-                years_of_experience: 0,
-                organization: ''
-              }
-            ])
-            .select()
-            .single();
-
-          if (profileError) {
-            console.error('프로필 생성 오류:', profileError);
-            throw profileError;
-          }
-
-          console.log('프로필 생성 성공:', newProfile);
-          
-          // 세션 상태 업데이트
-          setSession({
-            ...data,
-            user: data.user
-          });
-          
-          // 온보딩 페이지로 리다이렉트
-          alert('회원가입이 완료되었습니다. 프로필 정보를 입력해주세요.');
-          navigate('/onboarding', { replace: true });
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('인증 오류:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleCloseOnboarding = async () => {
     try {
       console.log('온보딩 닫기 시도, currentUser:', currentUser);
@@ -362,61 +282,29 @@ export const Auth = () => {
       <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div className="bg-[#1e2128] p-8 rounded-xl w-full max-w-md mx-4 border border-gray-700/50">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white">
-              {isLogin ? '로그인' : '회원가입'}
-            </h2>
+            <h2 className="text-xl font-bold text-white">로그인</h2>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">이메일</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#2b2f38] border border-gray-700/50 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                required
-              />
+          {error && (
+            <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-lg mb-4">
+              <p className="text-red-400 text-sm">{error}</p>
             </div>
+          )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">비밀번호</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#2b2f38] border border-gray-700/50 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition-colors font-medium ${
-                loading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              {loading ? '처리 중...' : isLogin ? '로그인' : '회원가입'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError(null);
-              }}
-              className="w-full text-gray-400 hover:text-white py-2 transition-colors text-sm"
-            >
-              {isLogin ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'}
-            </button>
-          </form>
+          <button
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className={`w-full flex items-center justify-center gap-2 bg-[#2b2f38] hover:bg-[#3d4251] text-white py-3 rounded-lg transition-colors ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            <img
+              src="/google-icon.svg"
+              alt="Google"
+              className="w-5 h-5"
+            />
+            {loading ? '로그인 중...' : 'Google로 계속하기'}
+          </button>
         </div>
       </div>
 
