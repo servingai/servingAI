@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import Favorites from './pages/Favorites';
 import Onboarding from './pages/Onboarding';
 import AuthCallback from './pages/AuthCallback';
+import AIRecommend from './pages/AIRecommend';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ function AppContent() {
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/auth-callback" element={<AuthCallback />} />
+          <Route path="/recommend" element={<AIRecommend />} />
         </Routes>
       </main>
       <BottomNavigation />

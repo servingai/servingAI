@@ -12,6 +12,7 @@ const AIRecommend = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [recommendation, setRecommendation] = useState(null);
   const [error, setError] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     const checkProfile = async () => {
@@ -26,6 +27,12 @@ const AIRecommend = () => {
   const handlePromptSubmit = async (e) => {
     e.preventDefault();
     if (!prompt.trim()) return;
+
+    // 로그인 체크
+    if (!authUser) {
+      setShowLoginModal(true);
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -69,6 +76,26 @@ const AIRecommend = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth-callback`,
+          scopes: 'email profile',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error logging in:', error);
+      setError('로그인 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <main className="pt-[60px] pb-[80px] px-4">
       <div className="max-w-4xl mx-auto">
@@ -93,9 +120,12 @@ const AIRecommend = () => {
               }
             `}
           </style>
-          <h1 className="text-[32px] font-bold text-center gradient-text mb-8">
+          <h1 className="text-[32px] font-bold text-center gradient-text mb-3">
             어떤 일을 해야하나요?
           </h1>
+          <p className="text-center text-gray-400 text-[15px] font-medium mb-10 tracking-tight">
+            쉽고 빠르게 해결할 수 있는 방법을 알려드릴게요
+          </p>
           <div className="max-w-2xl mx-auto">
             <div className="relative">
               <input
@@ -103,7 +133,7 @@ const AIRecommend = () => {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="해결하고 싶은 업무를 입력해보세요"
-                className="w-full px-6 py-4 bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-[#7950F2]/50 focus:border-[#7950F2] hover:border-[#7950F2] transition-all"
+                className="w-full px-6 py-4 bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] rounded-2xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#7950F2]/50 focus:border-[#7950F2] hover:border-[#7950F2] transition-all"
               />
               <button
                 onClick={handlePromptSubmit}
@@ -119,7 +149,7 @@ const AIRecommend = () => {
               </button>
             </div>
 
-            <div className="flex justify-center gap-4 mt-4">
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
               <button
                 onClick={() => setPrompt("고객 데이터 분석하기")}
                 className="px-4 py-2 rounded-full bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] text-sm hover:border-[#7950F2] hover:bg-[#7950F2]/5 transition-all"
@@ -131,6 +161,24 @@ const AIRecommend = () => {
                 className="px-4 py-2 rounded-full bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] text-sm hover:border-[#7950F2] hover:bg-[#7950F2]/5 transition-all"
               >
                 "마케팅 문구 작성하기"
+              </button>
+              <button
+                onClick={() => setPrompt("MVP 웹서비스 구현하기")}
+                className="px-4 py-2 rounded-full bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] text-sm hover:border-[#7950F2] hover:bg-[#7950F2]/5 transition-all"
+              >
+                "MVP 웹서비스 구현하기"
+              </button>
+              <button
+                onClick={() => setPrompt("디자인 초안 제작하기")}
+                className="px-4 py-2 rounded-full bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] text-sm hover:border-[#7950F2] hover:bg-[#7950F2]/5 transition-all"
+              >
+                "디자인 초안 제작하기"
+              </button>
+              <button
+                onClick={() => setPrompt("영상 콘텐츠 만들기")}
+                className="px-4 py-2 rounded-full bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] text-sm hover:border-[#7950F2] hover:bg-[#7950F2]/5 transition-all"
+              >
+                "영상 콘텐츠 만들기"
               </button>
             </div>
 
@@ -155,6 +203,35 @@ const AIRecommend = () => {
           </div>
         </section>
       </div>
+
+      {/* 로그인 모달 */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-[#1e2128] p-8 rounded-xl w-full max-w-md mx-4 border border-[#2b2f38]">
+            <h2 className="text-xl font-bold text-white mb-4">로그인이 필요합니다</h2>
+            <p className="text-gray-400 mb-6">AI 추천 기능은 로그인 후 이용할 수 있습니다.</p>
+            <div className="space-y-4">
+              <button
+                onClick={handleGoogleLogin}
+                className="flex items-center justify-center gap-2 w-full bg-[#2b2f38] hover:bg-[#3d4251] text-white py-3 rounded-lg transition-colors"
+              >
+                <img
+                  src="/google-icon.svg"
+                  alt="Google"
+                  className="w-5 h-5"
+                />
+                Google로 계속하기
+              </button>
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="w-full py-3 text-gray-400 hover:text-white transition-colors"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
