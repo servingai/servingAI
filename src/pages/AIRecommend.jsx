@@ -132,7 +132,7 @@ const AIRecommend = () => {
                 type="text"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="해결하고 싶은 업무를 입력해보세요"
+                placeholder="할일을 입력해보세요!"
                 className="w-full px-6 py-4 bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] rounded-2xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#7950F2]/50 focus:border-[#7950F2] hover:border-[#7950F2] transition-all"
               />
               <button
@@ -151,22 +151,16 @@ const AIRecommend = () => {
 
             <div className="flex flex-wrap justify-center gap-4 mt-4">
               <button
-                onClick={() => setPrompt("고객 데이터 분석하기")}
-                className="px-4 py-2 rounded-full bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] text-sm hover:border-[#7950F2] hover:bg-[#7950F2]/5 transition-all"
-              >
-                "고객 데이터 분석하기"
-              </button>
-              <button
                 onClick={() => setPrompt("마케팅 문구 작성하기")}
                 className="px-4 py-2 rounded-full bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] text-sm hover:border-[#7950F2] hover:bg-[#7950F2]/5 transition-all"
               >
                 "마케팅 문구 작성하기"
               </button>
               <button
-                onClick={() => setPrompt("MVP 웹서비스 구현하기")}
+                onClick={() => setPrompt("웹서비스 만들기")}
                 className="px-4 py-2 rounded-full bg-white dark:bg-[#1e2128] border border-[#e5e7eb] dark:border-[#2b2f38] text-sm hover:border-[#7950F2] hover:bg-[#7950F2]/5 transition-all"
               >
-                "MVP 웹서비스 구현하기"
+                "웹서비스 만들기"
               </button>
               <button
                 onClick={() => setPrompt("디자인 초안 제작하기")}
